@@ -1,0 +1,2926 @@
+diff --git a/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/arch/arm/boot/dts/imx6sll-evk.dts.orig b/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/arch/arm/boot/dts/imx6sll-evk.dts
+old mode 100644
+new mode 100755
+--- a/arch/arm/boot/dts/imx6sll-evk.dts
++++ b/arch/arm/boot/dts/imx6sll-evk.dts
+@@ -21,7 +21,7 @@
+ 
+ 	memory@80000000 {
+ 		device_type = "memory";
+-		reg = <0x80000000 0x80000000>;
++		reg = <0x80000000 0x20000000>;
+ 	};
+ 
+ 	reserved-memory {
+@@ -41,7 +41,7 @@
+ 		compatible = "pwm-backlight";
+ 		pwms = <&pwm1 0 5000000>;
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+-		default-brightness-level = <6>;
++		default-brightness-level = <0>;
+ 		status = "okay";
+ 	};
+ 
+@@ -160,27 +160,10 @@
+ 		off-on-delay-us = <20000>;
+ 		enable-active-high;
+ 	};
+-
+-	sound {
+-		compatible = "fsl,imx6sl-evk-wm8962", "fsl,imx-audio-wm8962";
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&pinctrl_hp>;
+-		model = "wm8962-audio";
+-		audio-cpu = <&ssi2>;
+-		audio-codec = <&wm8962>;
+-		audio-routing =
+-			"Headphone Jack", "HPOUTL",
+-			"Headphone Jack", "HPOUTR",
+-			"Ext Spk", "SPKOUTL",
+-			"Ext Spk", "SPKOUTR",
+-			"AMIC", "MICBIAS",
+-			"IN3R", "AMIC";
+-		mux-int-port = <2>;
+-		mux-ext-port = <3>;
+-		hp-det-gpio = <&gpio4 24 GPIO_ACTIVE_LOW>;
+-	};
+ };
+ 
++
++
+ &audmux {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_audmux3>;
+@@ -210,6 +193,18 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_i2c1>;
+ 	status = "okay";
++	elan@15 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_epdc_elan_touch>;
++		compatible = "elan,elan-touch";
++		reg = <0x15>;
++		interrupt-parent = <&gpio3>;
++		interrupts = <24 IRQ_TYPE_EDGE_FALLING>;
++		gpio_elan_cs = <&gpio2 9 0>;
++		gpio_elan_rst = <&gpio3 26 0>;
++		gpio_intr = <&gpio3 24 0>;
++		status = "okay";
++	};
+ 
+ 	pfuze100: pmic@8 {
+ 		compatible = "fsl,pfuze100";
+@@ -312,97 +307,50 @@
+ 		};
+ 	};
+ 
+-	max17135: max17135@48 {
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&pinctrl_max17135>;
+-		compatible = "maxim,max17135";
+-		reg = <0x48>;
++	//GAUGE MAX17262
++	max1726x: max1726x@36 {
++		reg = <0x36>;
+ 		status = "okay";
++		rsense = <7>; //internal Rsense = 7 miliOhms
++		model-option = <1>; //EZ Model (can be customized if needed)
++	};
++
++	//PMIC 2 TPS65185
++	tps6518x: tps6518x@68 {
++		compatible = "ti,tps6518x";
++		reg = <0x68>;
++		status = "okay";
++		upseq0 = <0xe4>;
++		upseq1 = <0x55>;
++		dwnseq0 = <0x1e>;
++		dwnseq1 = <0xe0>;
++
+ 
+-		vneg_pwrup = <1>;
+-		gvee_pwrup = <2>;
+-		vpos_pwrup = <10>;
+-		gvdd_pwrup = <12>;
+-		gvdd_pwrdn = <1>;
+-		vpos_pwrdn = <2>;
+-		gvee_pwrdn = <8>;
+-		vneg_pwrdn = <10>;
+ 		gpio_pmic_pwrgood = <&gpio2 13 0>;
+ 		gpio_pmic_vcom_ctrl = <&gpio2 3 0>;
+ 		gpio_pmic_wakeup = <&gpio2 14 0>;
+-		gpio_pmic_v3p3 = <&gpio2 7 0>;
++		gpio_pmic_powerup = <&gpio2 7 0>;
+ 		gpio_pmic_intr = <&gpio2 12 0>;
+ 
+ 		regulators {
+ 			DISPLAY_reg: DISPLAY {
+ 				regulator-name = "DISPLAY";
+ 			};
+-
+-			GVDD_reg: GVDD {
+-				/* 20v */
+-				regulator-name = "GVDD";
+-			};
+-
+-			GVEE_reg: GVEE {
+-				/* -22v */
+-				regulator-name = "GVEE";
+-			};
+-
+-			HVINN_reg: HVINN {
+-				/* -22v */
+-				regulator-name = "HVINN";
+-			};
+-
+-			HVINP_reg: HVINP {
+-				/* 20v */
+-				regulator-name = "HVINP";
+-			};
+-
+ 			VCOM_reg: VCOM {
+ 				regulator-name = "VCOM";
+-				/* Real max value: -500000 */
+-				regulator-max-microvolt = <4325000>;
+-				/* Real min value: -4325000 */
+-				regulator-min-microvolt = <500000>;
+-			};
+-
+-			VNEG_reg: VNEG {
+-				/* -15v */
+-				regulator-name = "VNEG";
+-			};
+-
+-			VPOS_reg: VPOS {
+-				/* 15v */
+-				regulator-name = "VPOS";
+ 			};
+-
++			//Actually V3P3 is not used, PMIC1_SW2 used instead
+ 			V3P3_reg: V3P3 {
+ 				regulator-name = "V3P3";
+ 			};
+ 		};
+ 	};
++	GPS: GPS@42 {
++		status = "okay";
++	};
+ };
+ 
+-&i2c3 {
+-	clock-frequency = <100000>;
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_i2c3>;
+-	status = "okay";
+ 
+-	wm8962: audio-codec@1a {
+-		compatible = "wlf,wm8962";
+-		reg = <0x1a>;
+-		clocks = <&clks IMX6SLL_CLK_EXTERN_AUDIO>;
+-		DCVDD-supply = <&vgen3_reg>;
+-		DBVDD-supply = <&reg_aud3v>;
+-		AVDD-supply = <&vgen3_reg>;
+-		CPVDD-supply = <&vgen3_reg>;
+-		MICVDD-supply = <&reg_aud3v>;
+-		PLLVDD-supply = <&vgen3_reg>;
+-		SPKVDD1-supply = <&reg_aud4v>;
+-		SPKVDD2-supply = <&reg_aud4v>;
+-	};
+-};
+ 
+ &lcdif {
+ 	pinctrl-names = "default";
+@@ -466,25 +414,19 @@
+ 	status = "okay";
+ };
+ 
+-&uart5 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_uart5>;
+-	fsl,uart-has-rtscts;
+-	/* for DTE mode, add below change */
+-	/* fsl,dte-mode; */
+-	/* pinctrl-0 = <&pinctrl_uart5dte>; */
+-	status = "disabled";
+-};
++
+ 
+ &usdhc1 {
+ 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+ 	pinctrl-0 = <&pinctrl_usdhc1>;
+ 	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
+ 	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
+-	cd-gpios = <&gpio4 7 GPIO_ACTIVE_LOW>;
+-	wp-gpios = <&gpio4 22 GPIO_ACTIVE_HIGH>;
+ 	keep-power-in-suspend;
++	cd-gpios = <&gpio4 7 GPIO_ACTIVE_LOW>;
++	non-removable;
++	no-1-8-v;
+ 	wakeup-source;
++	disable-wp;
+ 	vmmc-supply = <&reg_sd1_vmmc>;
+ 	status = "okay";
+ };
+@@ -504,6 +446,7 @@
+ 	vbus-supply = <&reg_usb_otg1_vbus>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_usbotg1>;
++	dr_mode = "peripheral";
+ 	disable-over-current;
+ 	srp-disable;
+ 	hnp-disable;
+@@ -513,8 +456,12 @@
+ 
+ &usbotg2 {
+ 	vbus-supply = <&reg_usb_otg2_vbus>;
+-	dr_mode = "host";
++	pinctrl-names = "default";
++	dr_mode = "peripheral";
+ 	disable-over-current;
++	srp-disable;
++	hnp-disable;
++	adp-disable;
+ 	status = "okay";
+ };
+ 
+@@ -536,6 +483,22 @@
+ 	fsl,ext-reset-output;
+ };
+ 
++&gpio4 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_gpio4>;
++		key-plus  = <&gpio4 18 GPIO_ACTIVE_LOW>;
++		key-minus = <&gpio4 17 GPIO_ACTIVE_LOW>;
++		key-onoff = <&gpio4 16 GPIO_ACTIVE_LOW>;
++		key-ok    = <&gpio4 23 GPIO_ACTIVE_LOW>;
++		key-left  = <&gpio4 21 GPIO_ACTIVE_LOW>;
++		key-right = <&gpio4 22 GPIO_ACTIVE_LOW>;
++		key-up    = <&gpio4 19 GPIO_ACTIVE_LOW>;
++		key-down  = <&gpio4 20 GPIO_ACTIVE_LOW>;
++		key-shift = <&gpio3 27 GPIO_ACTIVE_LOW>;
++		status = "okay";
++};
++
++
+ &iomuxc {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_hog>;
+@@ -548,6 +511,14 @@
+ 			MX6SLL_PAD_ECSPI2_SS0__GPIO4_IO15  0x17000
+ 		>;
+ 	};
++	pinctrl_epdc_elan_touch: epdc_elan_touch_grp {
++		fsl,pins = <
++			MX6SLL_PAD_KEY_COL0__GPIO3_IO24 0x17059        /* TCH_INT  */
++			MX6SLL_PAD_KEY_COL1__GPIO3_IO26 0x17059        /* TCH_RST  */
++			MX6SLL_PAD_EPDC_PWR_CTRL1__GPIO2_IO08 0x17059  /* TCH_GPIO */
++			MX6SLL_PAD_EPDC_PWR_CTRL2__GPIO2_IO09 0x17059  /* TCH_CS   */
++		>;
++	};
+ 
+ 	pinctrl_audmux3: audmux3grp {
+ 		fsl,pins = <
+@@ -601,7 +572,7 @@
+ 
+ 	pinctrl_hp: hpgrp {
+ 		fsl,pins = <
+-			MX6SLL_PAD_GPIO4_IO24__GPIO4_IO24 0x17059 /* HP DETECT */
++			MX6SLL_PAD_GPIO4_IO23__GPIO4_IO23 0x17059 /* HP DETECT */
+ 		>;
+ 	};
+ 
+@@ -642,23 +613,6 @@
+ 		>;
+ 	};
+ 
+-	pinctrl_uart5: uart5grp {
+-		fsl,pins = <
+-			MX6SLL_PAD_ECSPI1_MOSI__UART5_DCE_TX 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_SCLK__UART5_DCE_RX 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_SS0__UART5_DCE_CTS 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_MISO__UART5_DCE_RTS 0x1b0b1
+-		>;
+-	};
+-
+-	pinctrl_uart5dte: uart5dtegrp {
+-		fsl,pins = <
+-			MX6SLL_PAD_ECSPI1_MOSI__UART5_DTE_RX 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_SCLK__UART5_DTE_TX 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_SS0__UART5_DTE_RTS 0x1b0b1
+-			MX6SLL_PAD_ECSPI1_MISO__UART5_DTE_CTS 0x1b0b1
+-		>;
+-	};
+ 
+ 	pinctrl_usdhc1: usdhc1grp {
+ 		fsl,pins = <
+@@ -743,7 +697,6 @@
+ 
+ 	pinctrl_usbotg1: usbotg1grp {
+ 		fsl,pins = <
+-			MX6SLL_PAD_EPDC_PWR_COM__USB_OTG1_ID 0x17059
+ 		>;
+ 	};
+ 
+@@ -787,6 +740,11 @@
+ 		fsl,pins = <
+ 			MX6SLL_PAD_I2C1_SCL__I2C1_SCL	 0x4001b8b1
+ 			MX6SLL_PAD_I2C1_SDA__I2C1_SDA	 0x4001b8b1
++			MX6SLL_PAD_EPDC_PWR_STAT__GPIO2_IO13	0x80000000  /* pwrgood */
++			MX6SLL_PAD_EPDC_VCOM0__GPIO2_IO03	0x80000000  /* vcom_ctrl */
++			MX6SLL_PAD_EPDC_PWR_WAKE__GPIO2_IO14	0x80000000  /* wakeup */
++			MX6SLL_PAD_EPDC_PWR_CTRL0__GPIO2_IO07	0x80000000  /* v3p3 */
++			MX6SLL_PAD_EPDC_PWR_IRQ__GPIO2_IO12	0x80000000  /* pwr int */
+ 		>;
+ 	};
+ 
+@@ -848,4 +806,17 @@
+ 			MX6SLL_PAD_WDOG_B__WDOG1_B   0x170b0
+ 		>;
+ 	};
++	pinctrl_gpio4: gpio4grp {
++		fsl,pins = <
++			MX6SLL_PAD_GPIO4_IO16__GPIO4_IO16	0x108B0
++			MX6SLL_PAD_GPIO4_IO17__GPIO4_IO17	0x17059
++			MX6SLL_PAD_GPIO4_IO18__GPIO4_IO18	0x17059
++			MX6SLL_PAD_GPIO4_IO19__GPIO4_IO19	0x17059
++			MX6SLL_PAD_GPIO4_IO20__GPIO4_IO20	0x17059
++			MX6SLL_PAD_GPIO4_IO21__GPIO4_IO21	0x17059
++			MX6SLL_PAD_GPIO4_IO22__GPIO4_IO22	0x17059
++			MX6SLL_PAD_GPIO4_IO23__GPIO4_IO23	0x17059
++			MX6SLL_PAD_KEY_ROW1__GPIO3_IO27	0x17059
++		>;
++	};
+ };
+--- a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c	2022-05-11 17:52:16.685233024 -0500
++++ a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c	2022-05-24 18:40:12.030646000 -0500
+@@ -37,11 +37,12 @@
+ #include <linux/mfd/syscon.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/driver.h>
+-#include <linux/mfd/max17135.h>
++//#include <linux/mfd/max17135.h>
++#include <linux/mfd/tps6518x.h>
+ #include <linux/fsl_devices.h>
+ #include <linux/bitops.h>
+ #include <linux/pinctrl/consumer.h>
+-#include <linux/platform_data/dma-imx.h>
++#include <linux/platform_data/dma-imx.h>
+ #include <asm/cacheflush.h>
+ 
+ #include "epdc_v2_regs.h"
+@@ -84,6 +85,8 @@
+ #define MERGE_FAIL	1
+ #define MERGE_BLOCK	2
+ 
++
++
+ static u64 used_luts = 0x1;	/* do not use LUT0 */
+ static unsigned long default_bpp = 16;
+ 
+@@ -124,8 +127,7 @@ struct mxc_epdc_fb_data {
+ 	struct fb_var_screeninfo epdc_fb_var; /* Internal copy of screeninfo
+ 						so we can sync changes to it */
+ 	u32 pseudo_palette[16];
+-#define FW_STR_LEN	32
+-	char fw_str[FW_STR_LEN];
++	char fw_str[24];
+ 	struct list_head list;
+ 	struct imx_epdc_fb_mode *cur_mode;
+ 	struct imx_epdc_fb_platform_data *pdata;
+@@ -295,23 +297,6 @@ static struct fb_videomode ed060xh2c1mode = {
+ 	.flag = 0,
+ };
+ 
+-static struct fb_videomode ed060xh7u2mode = {
+-	.name = "ED060XH7U2",
+-	.refresh = 85,
+-	.xres = 1024,
+-	.yres = 758,
+-	.pixclock = 40000000,
+-	.left_margin = 12,
+-	.right_margin = 76,
+-	.upper_margin = 4,
+-	.lower_margin = 5,
+-	.hsync_len = 12,
+-	.vsync_len = 2,
+-	.sync = 0,
+-	.vmode = FB_VMODE_NONINTERLACED,
+-	.flag = 0,
+-};
+-
+ static struct fb_videomode e60_v110_mode = {
+ 	.name = "E60_V110",
+ 	.refresh = 50,
+@@ -394,19 +379,6 @@ static struct imx_epdc_fb_mode panel_modes[] = {
+ 		19, 	/* gdclk_offs */
+ 		1, 	/* num_ce */
+ 	},
+-	{
+-		&ed060xh7u2mode,
+-		4, 	/* vscan_holdoff */
+-		10, 	/* sdoed_width */
+-		20, 	/* sdoed_delay */
+-		10, 	/* sdoez_width */
+-		20, 	/* sdoez_delay */
+-		524, 	/* GDCLK_HP */
+-		327, 	/* GDSP_OFF */
+-		0, 	/* GDOE_OFF */
+-		19, 	/* gdclk_offs */
+-		1, 	/* num_ce */
+-	},
+ 	{
+ 		&e60_v110_mode,
+ 		4,      /* vscan_holdoff */
+@@ -839,11 +811,20 @@ static inline void epdc_set_temp(u32 temp)
+ 
+ 	if (temp == DEFAULT_TEMP_INDEX) {
+ 		/*ret = max17135_reg_read(REG_MAX17135_EXT_TEMP, &ext_temp);*/
++		tps6518x_reg_write(0x0D,0x80);
++		ret=tps6518x_reg_read(0x00,&ext_temp);
++		//printk(">>reg read=%i",ret);
+ 		if (ret == 0) {
+-			ext_temp = ext_temp >> 8;
++
++			//printk(">>ext_temp=%i",ext_temp);
++			if(ext_temp>245)
++				ext_temp=245-ext_temp;
++			//ext_temp = ext_temp >> 8;
++			//printk(">>ext_temp=%i",ext_temp);
+ 			dev_dbg(g_fb_data->dev, "the current external temperature is %d\n",
+ 				ext_temp);
+ 			ext_temp_index = mxc_epdc_fb_get_temp_index(g_fb_data, ext_temp);
++			//printk("ext_temp_index=%i",ext_temp_index);
+ 		}
+ 	}
+ 
+@@ -1018,7 +999,7 @@ static inline bool epdc_any_luts_active(int rev)
+ static inline bool epdc_any_luts_real_available(void)
+ {
+ 	if ((__raw_readl(EPDC_STATUS_LUTS) != 0xfffffffe) ||
+-		(__raw_readl(EPDC_STATUS_LUTS2) != ~0xffffffff))
++		(__raw_readl(EPDC_STATUS_LUTS2) != ~0UL))
+ 		return true;
+ 	else
+ 		return false;
+@@ -1231,7 +1212,6 @@ static void epdc_set_vertical_timing(u32 vert_start, u32 vert_end,
+ 	__raw_writel(reg_val, EPDC_TCE_VSCAN);
+ }
+ 
+-/* Initialize EPDC, passing pointer to EPDC registers */
+ static void epdc_init_settings(struct mxc_epdc_fb_data *fb_data)
+ {
+ 	struct imx_epdc_fb_mode *epdc_mode = fb_data->cur_mode;
+@@ -1244,7 +1224,6 @@ static void epdc_init_settings(struct mxc_epdc_fb_data *fb_data)
+ 	int j;
+ 	unsigned char *bb_p;
+ 
+-	pm_runtime_get_sync(fb_data->dev);
+ 	/* Enable clocks to access EPDC regs */
+ 	clk_prepare_enable(fb_data->epdc_clk_axi);
+ 	clk_prepare_enable(fb_data->epdc_clk_ahb);
+@@ -1452,7 +1431,6 @@ static void epdc_init_settings(struct mxc_epdc_fb_data *fb_data)
+ 	clk_disable_unprepare(fb_data->epdc_clk_axi);
+ 	clk_disable_unprepare(fb_data->epdc_clk_ahb);
+ 	clk_disable_unprepare(fb_data->epdc_clk_pix);
+-	pm_runtime_put_sync_suspend(fb_data->dev);
+ }
+ 
+ static void epdc_powerup(struct mxc_epdc_fb_data *fb_data)
+@@ -1513,7 +1491,8 @@ static void epdc_powerup(struct mxc_epdc_fb_data *fb_data)
+ 	clk_prepare_enable(fb_data->epdc_clk_ahb);
+ 	clk_prepare_enable(fb_data->epdc_clk_pix);
+ 
+-	epdc_init_settings(fb_data);
++	__raw_writel(EPDC_CTRL_CLKGATE, EPDC_CTRL_CLEAR);
++
+ 
+ 	/* Enable power to the EPD panel */
+ 	if (fb_data->display_regulator) {
+@@ -1594,6 +1573,9 @@ static void epdc_powerdown(struct mxc_epdc_fb_data *fb_data)
+ 
+ static void epdc_init_sequence(struct mxc_epdc_fb_data *fb_data)
+ {
++	/* Initialize EPDC, passing pointer to EPDC registers */
++	epdc_init_settings(fb_data);
++
+ 	fb_data->in_init = true;
+ 	epdc_powerup(fb_data);
+ 	draw_mode0(fb_data);
+@@ -2159,7 +2141,7 @@ static int mxc_epdc_fb_get_temp_index(struct mxc_epdc_fb_data *fb_data, int temp
+ {
+ 	int i;
+ 	int index = -1;
+-
++	//printk("mxc_epdc_fb_get_temp_index temp=%i",temp);
+ 	if (fb_data->trt_entries == 0) {
+ 		dev_err(fb_data->dev,
+ 			"No TRT exists...using default temp index\n");
+@@ -2167,9 +2149,11 @@ static int mxc_epdc_fb_get_temp_index(struct mxc_epdc_fb_data *fb_data, int temp
+ 	}
+ 
+ 	/* Search temperature ranges for a match */
+-	for (i = 0; i < fb_data->trt_entries - 1; i++) {
++	//for (i = 0; i < fb_data->trt_entries; i++) {
++	for (i = fb_data->trt_entries-1; i>=0; i--) {
+ 		if ((temp >= fb_data->temp_range_bounds[i])
+-			&& (temp < fb_data->temp_range_bounds[i+1])) {
++			//&& (temp < fb_data->temp_range_bounds[i+1])) {
++			) {
+ 			index = i;
+ 			break;
+ 		}
+@@ -2178,11 +2162,12 @@ static int mxc_epdc_fb_get_temp_index(struct mxc_epdc_fb_data *fb_data, int temp
+ 	if (index < 0) {
+ 		dev_err(fb_data->dev,
+ 			"No TRT index match...using default temp index\n");
+-		return DEFAULT_TEMP_INDEX;
++		//return DEFAULT_TEMP_INDEX;
++		return fb_data->trt_entries-1;
+ 	}
+ 
+ 	dev_dbg(fb_data->dev, "Using temperature index %d\n", index);
+-
++	//printk("mxc_epdc_fb_get_temp_index fb_data->trt_entries=%i, temp= %i, index=%i, 11=%i 12=%i, 13=%i, 14=%i, 0=%i",fb_data->trt_entries,temp, index, fb_data->temp_range_bounds[11], fb_data->temp_range_bounds[12], fb_data->temp_range_bounds[13], fb_data->temp_range_bounds[14], fb_data->temp_range_bounds[0]);
+ 	return index;
+ }
+ 
+@@ -2192,6 +2177,7 @@ static int mxc_epdc_fb_set_temperature(int temperature, struct fb_info *info)
+ 		(struct mxc_epdc_fb_data *)info:g_fb_data;
+ 
+ 	/* Store temp index. Used later when configuring updates. */
++	//printk("mxc_epdc_fb_set_temperature temp=%i",temperature);
+ 	mutex_lock(&fb_data->queue_mutex);
+ 	fb_data->temp_index = mxc_epdc_fb_get_temp_index(fb_data, temperature);
+ 	mutex_unlock(&fb_data->queue_mutex);
+@@ -3220,9 +3206,14 @@ static void epdc_submit_work_func(struct work_struct *work)
+ 	if (upd_data_list->update_desc->upd_data.temp != TEMP_USE_AMBIENT) {
+ 		temp_index = mxc_epdc_fb_get_temp_index(fb_data,
+ 			upd_data_list->update_desc->upd_data.temp);
++		//printk("epdc_intr_work_func >!= TEMP_USE_AMBIENT==>%i",temp_index);
+ 		epdc_set_temp(temp_index);
+-	} else
+-		epdc_set_temp(fb_data->temp_index);
++	} else{
++		//printk("epdc_intr_work_func >== TEMP_USE_AMBIENT==>%i",fb_data->temp_index);
++		//epdc_set_temp(fb_data->temp_index);
++		epdc_set_temp(0);
++		
++	}
+ 
+ 	epdc_set_update_addr(update_addr);
+ 	epdc_set_update_coord(adj_update_region.left, adj_update_region.top);
+@@ -3539,9 +3530,13 @@ static int mxc_epdc_fb_send_single_update(struct mxcfb_update_data *upd_data,
+ 	if (upd_desc->upd_data.temp != TEMP_USE_AMBIENT) {
+ 		temp_index = mxc_epdc_fb_get_temp_index(fb_data,
+ 			upd_desc->upd_data.temp);
++		//printk("mxc_epdc_fb_send_single_update >!= TEMP_USE_AMBIENT==>%i",temp_index);
+ 		epdc_set_temp(temp_index);
+-	} else
+-		epdc_set_temp(fb_data->temp_index);
++	} else{
++		//printk("mxc_epdc_fb_send_single_update >== TEMP_USE_AMBIENT==>%i",fb_data->temp_index);
++		//epdc_set_temp(fb_data->temp_index);
++		epdc_set_temp(0);
++	}
+ 	if (fb_data->wv_modes_update &&
+ 		(upd_desc->upd_data.waveform_mode == WAVEFORM_MODE_AUTO)) {
+ 		epdc_set_update_waveform(&fb_data->wv_modes);
+@@ -3713,6 +3708,7 @@ static int mxc_epdc_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 	case MXCFB_SET_TEMPERATURE:
+ 		{
+ 			int temperature;
++			//printk("MXCFB_SET_TEMPERATURE");
+ 			if (!get_user(temperature, (int32_t __user *) arg))
+ 				ret = mxc_epdc_fb_set_temperature(temperature,
+ 					info);
+@@ -4319,8 +4315,10 @@ static void epdc_intr_work_func(struct work_struct *work)
+ 				if (next_marker->lut_num != DRY_RUN_NO_LUT)
+ 					continue;
+ 
+-				if (epdc_collision)
++				if (epdc_collision){
+ 					next_marker->collision_test = true;
++					printk("EPDC>>>COLLISION\n");
++				}
+ 				else
+ 					next_marker->collision_test = false;
+ 
+@@ -4683,9 +4681,13 @@ static void epdc_intr_work_func(struct work_struct *work)
+ 		!= TEMP_USE_AMBIENT) {
+ 		temp_index = mxc_epdc_fb_get_temp_index(fb_data,
+ 			fb_data->cur_update->update_desc->upd_data.temp);
++		//printk("epdc_intr_work_func >!= TEMP_USE_AMBIENT==>%i",temp_index);
+ 		epdc_set_temp(temp_index);
+-	} else
++	} else{
++		//printk("epdc_intr_work_func >== TEMP_USE_AMBIENT==>%i",fb_data->temp_index);
+ 		epdc_set_temp(fb_data->temp_index);
++		epdc_set_temp(0);
++	}
+ 	epdc_set_update_addr(fb_data->cur_update->phys_addr +
+ 				fb_data->cur_update->update_desc->epdc_offs);
+ 	epdc_set_update_coord(next_upd_region->left, next_upd_region->top);
+@@ -4773,8 +4775,8 @@ static void mxc_epdc_fb_fw_handler(const struct firmware *fw,
+ 	struct fb_var_screeninfo *screeninfo = &fb_data->epdc_fb_var;
+ 	u32 xres, yres;
+ 	struct clk *epdc_parent;
+-	unsigned long target_pix_clk, epdc_pix_rate;
+-	long rounded_pix_clk, rounded_parent_rate;
++	unsigned long rounded_parent_rate, epdc_pix_rate,
++			rounded_pix_clk, target_pix_clk;
+ 
+ 	if (fw == NULL) {
+ 		/* If default FW file load failed, we give up */
+@@ -4849,23 +4851,12 @@ static void mxc_epdc_fb_fw_handler(const struct firmware *fw,
+ 	target_pix_clk = fb_data->cur_mode->vmode->pixclock;
+ 
+ 	rounded_pix_clk = clk_round_rate(fb_data->epdc_clk_pix, target_pix_clk);
+-	if (rounded_pix_clk < 0) {
+-		dev_err(fb_data->dev,
+-			"Failed to round clock rate: %ld\n", rounded_pix_clk);
+-		return;
+-	}
+ 
+ 	if (((rounded_pix_clk >= target_pix_clk + target_pix_clk/100) ||
+ 		(rounded_pix_clk <= target_pix_clk - target_pix_clk/100))) {
+ 		/* Can't get close enough without changing parent clk */
+ 		epdc_parent = clk_get_parent(fb_data->epdc_clk_pix);
+ 		rounded_parent_rate = clk_round_rate(epdc_parent, target_pix_clk);
+-		if (rounded_parent_rate < 0) {
+-			dev_err(fb_data->dev,
+-				"Failed to round parent clock rate: %ld\n",
+-				rounded_parent_rate);
+-			return;
+-		}
+ 
+ 		epdc_pix_rate = target_pix_clk;
+ 		while (epdc_pix_rate < rounded_parent_rate)
+@@ -4873,12 +4864,6 @@ static void mxc_epdc_fb_fw_handler(const struct firmware *fw,
+ 		clk_set_rate(epdc_parent, epdc_pix_rate);
+ 
+ 		rounded_pix_clk = clk_round_rate(fb_data->epdc_clk_pix, target_pix_clk);
+-		if (rounded_pix_clk < 0) {
+-			dev_err(fb_data->dev,
+-				"Failed to round clock rate: %ld\n",
+-				rounded_pix_clk);
+-			return;
+-		}
+ 		if (((rounded_pix_clk >= target_pix_clk + target_pix_clk/100) ||
+ 			(rounded_pix_clk <= target_pix_clk - target_pix_clk/100)))
+ 			/* Still can't get a good clock, provide warning */
+@@ -4947,10 +4932,8 @@ static int mxc_epdc_fb_init_hw(struct fb_info *info)
+ 	 */
+ 	if (fb_data->cur_mode) {
+ 		strcpy(fb_data->fw_str, "imx/epdc/epdc_");
+-		strncat(fb_data->fw_str, fb_data->cur_mode->vmode->name,
+-			FW_STR_LEN - strlen(fb_data->fw_str) - 1);
+-		strncat(fb_data->fw_str, ".fw",
+-			FW_STR_LEN - strlen(fb_data->fw_str) - 1);
++		strcat(fb_data->fw_str, fb_data->cur_mode->vmode->name);
++		strcat(fb_data->fw_str, ".fw");
+ 	}
+ 
+ 	fb_data->fw_default_load = false;
+@@ -6050,7 +6033,7 @@ static int pxp_wfe_a_process_clear_workingbuffer(struct mxc_epdc_fb_data *fb_dat
+ 	dma_chan = &fb_data->pxp_chan->dma_chan;
+ 
+ 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg, 2 + 4,
+-						     DMA_MEM_TO_DEV,
++						     DMA_TO_DEVICE,
+ 						     DMA_PREP_INTERRUPT,
+ 						     NULL);
+ 	if (!txd) {
+@@ -6231,7 +6214,7 @@ static int pxp_legacy_process(struct mxc_epdc_fb_data *fb_data,
+ 	dma_chan = &fb_data->pxp_chan->dma_chan;
+ 
+ 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg, 2,
+-						     DMA_MEM_TO_DEV,
++						     DMA_TO_DEVICE,
+ 						     DMA_PREP_INTERRUPT,
+ 						     NULL);
+ 	if (!txd) {
+@@ -6368,7 +6351,7 @@ static int pxp_process_dithering(struct mxc_epdc_fb_data *fb_data,
+ 	dma_chan = &fb_data->pxp_chan->dma_chan;
+ 
+ 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg, 2 + 4,
+-						     DMA_MEM_TO_DEV,
++						     DMA_TO_DEVICE,
+ 						     DMA_PREP_INTERRUPT,
+ 						     NULL);
+ 	if (!txd) {
+@@ -6516,7 +6499,7 @@ static int pxp_wfe_a_process(struct mxc_epdc_fb_data *fb_data,
+ 	dma_chan = &fb_data->pxp_chan->dma_chan;
+ 
+ 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg, 2 + 4,
+-						     DMA_MEM_TO_DEV,
++						     DMA_TO_DEVICE,
+ 						     DMA_PREP_INTERRUPT,
+ 						     NULL);
+ 	if (!txd) {
+@@ -6713,7 +6696,7 @@ static int pxp_wfe_b_process_update(struct mxc_epdc_fb_data *fb_data,
+ 	dma_chan = &fb_data->pxp_chan->dma_chan;
+ 
+ 	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg, 2 + 4,
+-						     DMA_MEM_TO_DEV,
++						     DMA_TO_DEVICE,
+ 						     DMA_PREP_INTERRUPT,
+ 						     NULL);
+ 	if (!txd) {
+@@ -6997,3 +6980,4 @@ module_exit(mxc_epdc_fb_exit);
+ MODULE_AUTHOR("Freescale Semiconductor, Inc.");
+ MODULE_DESCRIPTION("MXC EPDC V2 framebuffer driver");
+ MODULE_LICENSE("GPL");
++
+diff --git a/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/arch/arm/configs/imx_v7_defconfig_orig b/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/arch/arm/configs/imx_v7_defconfig
+index 6de3049..779182b 100644
+--- a/arch/arm/configs/imx_v7_defconfig
++++ b/arch/arm/configs/imx_v7_defconfig
+@@ -254,6 +254,7 @@ CONFIG_SENSORS_MC13783_ADC=y
+ CONFIG_SENSORS_GPIO_FAN=y
+ CONFIG_SENSORS_IIO_HWMON=y
+ CONFIG_SENSORS_MAX17135=y
++CONFIG_SENSORS_TPS6518X=y
+ CONFIG_THERMAL=y
+ CONFIG_THERMAL_STATISTICS=y
+ CONFIG_THERMAL_WRITABLE_TRIPS=y
+@@ -272,6 +273,7 @@ CONFIG_MFD_DA9063=y
+ CONFIG_MFD_MC13XXX_SPI=y
+ CONFIG_MFD_MC13XXX_I2C=y
+ CONFIG_MFD_MAX17135=y
++CONFIG_MFD_TPS6518X=y
+ CONFIG_MFD_RN5T618=y
+ CONFIG_MFD_SI476X_CORE=y
+ CONFIG_MFD_STMPE=y
+@@ -284,6 +286,7 @@ CONFIG_REGULATOR_DA9063=y
+ CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_LTC3676=y
+ CONFIG_REGULATOR_MAX17135=y
++CONFIG_REGULATOR_TPS6518X=y
+ CONFIG_REGULATOR_MC13783=y
+ CONFIG_REGULATOR_MC13892=y
+ CONFIG_REGULATOR_PF1550_RPMSG=y
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 112383b..7048693 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1057,6 +1057,15 @@ config SENSORS_MAX17135
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called max17135_sensor.
+ 
++config SENSORS_TPS6518X
++        tristate "Texas Instruments TPS6518X EPD temperature sensor"
++        depends on I2C
++        help
++          If you say yes here you get support for TPS6518X  PMIC sensor.
++
++          This driver can also be built as a module.  If so, the module
++          will be called tps6518x_sensor.
++
+ config SENSORS_MAX197
+ 	tristate "Maxim MAX197 and compatibles"
+ 	help
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 684d0cb..ee2c4a8 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -139,6 +139,7 @@ obj-$(CONFIG_SENSORS_MAX16065)	+= max16065.o
+ obj-$(CONFIG_SENSORS_MAX1619)	+= max1619.o
+ obj-$(CONFIG_SENSORS_MAX1668)	+= max1668.o
+ obj-$(CONFIG_SENSORS_MAX17135)  += max17135-hwmon.o
++obj-$(CONFIG_SENSORS_TPS6518X)  += tps6518x-hwmon.o
+ obj-$(CONFIG_SENSORS_MAX197)	+= max197.o
+ obj-$(CONFIG_SENSORS_MAX31722)	+= max31722.o
+ obj-$(CONFIG_SENSORS_MAX31730)	+= max31730.o
+diff --git a/drivers/hwmon/tps6518x-hwmon.c b/drivers/hwmon/tps6518x-hwmon.c
+new file mode 100644
+index e69de29..8bc0a65 100644
+--- /dev/null
++++ b/drivers/hwmon/tps6518x-hwmon.c
+@@ -0,0 +1,323 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
++ */
++/*
++ * tps65185.c
++ *
++ * Based on the MAX1619 driver.
++ * Copyright (C) 2003-2004 Alexey Fisher <fishor@mail.ru>
++ *                         Jean Delvare <khali@linux-fr.org>
++ *
++ * The TPS65185 is a sensor chip made by Texass Instruments.
++ * It reports up to two temperatures (its own plus up to
++ * one external one).
++ */
++
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/jiffies.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/sysfs.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/tps6518x.h>
++#include <linux/mod_devicetable.h>
++
++#include <linux/gpio.h>
++
++/*
++ * Conversions
++ */
++static int temp_from_reg(int val)
++{
++	return val;
++}
++
++/*
++ * Functions declaration
++ */
++static int tps6518x_sensor_probe(struct platform_device *pdev);
++static int tps6518x_sensor_remove(struct platform_device *pdev);
++
++static const struct platform_device_id tps6518x_sns_id[] = {
++	{ "tps6518x-sns", 0},
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(platform, tps6518x_sns_id);
++
++/*
++ * Driver data (common to all clients)
++ */
++static struct platform_driver tps6518x_sensor_driver = {
++	.probe = tps6518x_sensor_probe,
++	.remove = tps6518x_sensor_remove,
++	.id_table = tps6518x_sns_id,
++	.driver = {
++		.name = "tps6518x_sensor",
++	},
++};
++
++
++/*
++ * Client data (each client gets its own)
++ */
++struct tps6518x_data {
++	struct device *hwmon_dev;
++};
++
++/*
++ * Sysfs stuff
++ */
++static ssize_t show_temp_input(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	unsigned int reg_val;
++	/*
++	 * begin Temperature conversion
++	 */
++	tps6518x_reg_read(REG_TPS6518x_REVID,&reg_val);
++	switch (reg_val & 0xff)
++	{
++	   case TPS65180_PASS1 :
++	   case TPS65180_PASS2 :
++	   case TPS65181_PASS1 :
++	   case TPS65181_PASS2 :
++		    reg_val = 0x80;
++		    tps6518x_reg_write(REG_TPS65180_TMST_CONFIG, reg_val);
++		    // wait for completion completed
++		    while ((0x20 & reg_val) == 0)
++		    {
++		        msleep(1);
++		        tps6518x_reg_read(REG_TPS65180_TMST_CONFIG, &reg_val);
++		    }
++	        break;
++	   case TPS65185_PASS0 :
++	   case TPS65186_PASS0 :
++	   case TPS65185_PASS1 :
++	   case TPS65186_PASS1 :
++	   case TPS65185_PASS2 :
++	   case TPS65186_PASS2 :
++		    reg_val = 0x80;
++		    tps6518x_reg_write(REG_TPS65185_TMST1, reg_val);
++		    // wait for completion completed
++		    while ((0x20 & reg_val) == 0)
++		    {
++		        msleep(1);
++		        tps6518x_reg_read(REG_TPS65185_TMST1, &reg_val);
++		    }
++	        break;
++	   default:
++		break;
++
++	}
++
++	tps6518x_reg_read(REG_TPS6518x_TMST_VAL, &reg_val);
++	return snprintf(buf, PAGE_SIZE, "%d\n", temp_from_reg(reg_val));
++}
++
++static ssize_t show_intr_regs(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	unsigned int reg_val;
++	unsigned int intr_reg_val;
++	/*
++	 * get the interrupt status register value
++	 */
++	tps6518x_reg_read(REG_TPS6518x_REVID,&reg_val);
++	switch (reg_val & 0xff)
++	{
++	   case TPS65180_PASS1 :
++	   case TPS65180_PASS2 :
++	   case TPS65181_PASS1 :
++	   case TPS65181_PASS2 :
++		    tps6518x_reg_read(REG_TPS65180_INT1, &intr_reg_val);
++		    tps6518x_reg_read(REG_TPS65180_INT2, &reg_val);
++		    intr_reg_val |= reg_val<<8;
++	        break;
++	   case TPS65185_PASS0 :
++	   case TPS65186_PASS0 :
++	   case TPS65185_PASS1 :
++	   case TPS65186_PASS1 :
++	   case TPS65185_PASS2 :
++	   case TPS65186_PASS2 :
++		    tps6518x_reg_read(REG_TPS65185_INT1, &intr_reg_val);
++		    tps6518x_reg_read(REG_TPS65185_INT2, &reg_val);
++		    intr_reg_val |= reg_val<<8;
++	        break;
++	   default:
++		break;
++
++	}
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", intr_reg_val);
++}
++
++static ssize_t show_vcom(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	unsigned int reg_val;
++	unsigned int vcom_reg_val;
++	/*
++	 * get the vcom registers
++	 */
++	tps6518x_reg_read(REG_TPS6518x_REVID,&reg_val);
++	switch (reg_val & 0xff)
++	{
++	   case TPS65180_PASS1 :
++	   case TPS65180_PASS2 :
++	   case TPS65181_PASS1 :
++	   case TPS65181_PASS2 :
++		    tps6518x_reg_read(REG_TPS65180_VCOM_ADJUST, &vcom_reg_val);
++	        break;
++	   case TPS65185_PASS0 :
++	   case TPS65186_PASS0 :
++	   case TPS65185_PASS1 :
++	   case TPS65186_PASS1 :
++	   case TPS65185_PASS2 :
++	   case TPS65186_PASS2 :
++		    tps6518x_reg_read(REG_TPS65185_VCOM1, &vcom_reg_val);
++		    tps6518x_reg_read(REG_TPS65185_VCOM2, &reg_val);
++		    vcom_reg_val |= reg_val<<8;
++	        break;
++	   default:
++		break;
++
++	}
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", vcom_reg_val);
++}
++
++static ssize_t set_vcom(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	unsigned int reg_val;
++	long vcom_reg_val = simple_strtol(buf,NULL,10);
++	/*
++	 * get the interrupt status register value
++	 */
++	tps6518x_reg_read(REG_TPS6518x_REVID,&reg_val);
++	switch (reg_val & 0xff)
++	{
++	   case TPS65180_PASS1 :
++	   case TPS65180_PASS2 :
++	   case TPS65181_PASS1 :
++	   case TPS65181_PASS2 :
++		    tps6518x_reg_write(REG_TPS65180_VCOM_ADJUST, vcom_reg_val&0xff);
++	        break;
++	   case TPS65185_PASS0 :
++	   case TPS65186_PASS0 :
++	   case TPS65185_PASS1 :
++	   case TPS65186_PASS1 :
++	   case TPS65185_PASS2 :
++	   case TPS65186_PASS2 :
++		    tps6518x_reg_write(REG_TPS65185_VCOM1, vcom_reg_val&0xff);
++		    tps6518x_reg_write(REG_TPS65185_VCOM2, (vcom_reg_val>>8)&0xff);
++	        break;
++	   default:
++		break;
++
++	}
++
++	return count;
++}
++
++
++static DEVICE_ATTR(temp_input, S_IRUGO, show_temp_input, NULL);
++static DEVICE_ATTR(intr_input, S_IRUGO, show_intr_regs, NULL);
++static DEVICE_ATTR(vcom_value, S_IWUSR | S_IRUGO, show_vcom, set_vcom);
++
++static struct attribute *tps6518x_attributes[] = {
++	&dev_attr_temp_input.attr,
++	&dev_attr_intr_input.attr,
++	&dev_attr_vcom_value.attr,
++	NULL
++};
++
++static const struct attribute_group tps6518x_group = {
++	.attrs = tps6518x_attributes,
++};
++
++/*
++ * Real code
++ */
++static int tps6518x_sensor_probe(struct platform_device *pdev)
++{
++	struct tps6518x_data *data;
++	int err;
++       //printk("tps6518x_sensor_probe starting\n");
++
++	data = kzalloc(sizeof(struct tps6518x_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	/* Register sysfs hooks */
++	err = sysfs_create_group(&pdev->dev.kobj, &tps6518x_group);
++	if (err)
++		goto exit_free;
++
++	data->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		goto exit_remove_files;
++	}
++
++	platform_set_drvdata(pdev, data);
++
++       //printk("tps6518x_sensor_probe success\n");
++	return 0;
++
++exit_remove_files:
++	sysfs_remove_group(&pdev->dev.kobj, &tps6518x_group);
++exit_free:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int tps6518x_sensor_remove(struct platform_device *pdev)
++{
++	struct tps6518x_data *data = platform_get_drvdata(pdev);
++
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&pdev->dev.kobj, &tps6518x_group);
++
++	kfree(data);
++	return 0;
++}
++
++static int __init sensors_tps6518x_init(void)
++{
++	return platform_driver_register(&tps6518x_sensor_driver);
++}
++module_init(sensors_tps6518x_init);
++
++static void __exit sensors_tps6518x_exit(void)
++{
++	platform_driver_unregister(&tps6518x_sensor_driver);
++}
++module_exit(sensors_tps6518x_exit);
++
++MODULE_DESCRIPTION("TPS6518x sensor driver");
++MODULE_LICENSE("GPL");
++//
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 459c14c..eb07d7d 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -815,6 +815,15 @@ config MFD_MAX17135
+ 	  This is the MAX17135 PMIC support. It includes
+ 	  core support for communication with the MAX17135 chip.
+ 
++config MFD_TPS6518X
++	tristate "TPS TPS6518X EPD PMIC core"
++	depends on I2C
++
++	help
++	  This is the TPS6518X PMIC support. It includes
++	  core support for communication with the TPS6518X chip.
++
++
+ config MFD_FP9931
+ 	tristate "Fitipower FP9931 EPD PMIC Core"
+ 	depends on I2C && OF
+diff --git a/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/mfd/Makefile.orig b/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/mfd/Makefile
+index fbb2415..eb0035c 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -163,6 +163,7 @@ obj-$(CONFIG_MFD_DA9150)	+= da9150-core.o
+ 
+ obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+ obj-$(CONFIG_MFD_MAX17135)	+= max17135-core.o
++obj-$(CONFIG_MFD_TPS6518X)	+= tps6518x-core.o
+ obj-$(CONFIG_MFD_FP9931)	+= fp9931-core.o
+ obj-$(CONFIG_MFD_MAX77620)	+= max77620.o
+ obj-$(CONFIG_MFD_MAX77650)	+= max77650.o
+diff --git a/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/mfd/tps6518x-core.c.orig b/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/mfd/tps6518x-core.c
+new file mode 100644
+index e69de29..ad80a5a 100755
+--- /dev/null
++++ b/drivers/mfd/tps6518x-core.c
+@@ -0,0 +1,297 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
++ */
++
++/*!
++ * @file pmic/core/tps6518x.c
++ * @brief This file contains TPS6518x specific PMIC code. This implementaion
++ * may differ for each PMIC chip.
++ *
++ * @ingroup PMIC_CORE
++ */
++
++/*
++ * Includes
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/uaccess.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++
++#include <linux/platform_device.h>
++#include <linux/regulator/machine.h>
++#include <linux/pmic_status.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/tps6518x.h>
++#include <asm/mach-types.h>
++
++static int tps6518x_detect(struct i2c_client *client, struct i2c_board_info *info);
++struct i2c_client *tps6518x_client;
++static struct regulator *gpio_regulator;
++
++static struct mfd_cell tps6518x_devs[] = {
++	{ .name = "tps6518x-pmic", },
++	{ .name = "tps6518x-sns", },
++};
++
++static const unsigned short normal_i2c[] = {EPDC_PMIC_I2C_ADDR, I2C_CLIENT_END};
++
++int tps6518x_reg_read(int reg_num, unsigned int *reg_val)
++{
++	int result;
++
++	if (tps6518x_client == NULL)
++		return PMIC_ERROR;
++
++	result = i2c_smbus_read_byte_data(tps6518x_client, reg_num);
++	if (result < 0) {
++		dev_err(&tps6518x_client->dev,
++			"Unable to read tps6518x register via I2C\n");
++		return PMIC_ERROR;
++	}
++
++	*reg_val = result;
++	return PMIC_SUCCESS;
++}
++
++int tps6518x_reg_write(int reg_num, const unsigned int reg_val)
++{
++	int result;
++
++	if (tps6518x_client == NULL)
++		return PMIC_ERROR;
++
++	result = i2c_smbus_write_byte_data(tps6518x_client, reg_num, reg_val);
++	if (result < 0) {
++	//	dev_err(&tps6518x_client->dev,
++	//		"Unable to write TPS6518x register via I2C\n");
++		return PMIC_ERROR;
++	}
++
++	return PMIC_SUCCESS;
++}
++
++#ifdef CONFIG_OF
++static struct tps6518x_platform_data *tps6518x_i2c_parse_dt_pdata(
++					struct device *dev)
++{
++	struct tps6518x_platform_data *pdata;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(dev, "could not allocate memory for pdata\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	return pdata;
++}
++#else
++static struct tps6518x_platform_data *tps6518x_i2c_parse_dt_pdata(
++					struct device *dev)
++{
++	return NULL;
++}
++#endif	/* !CONFIG_OF */
++
++static int tps6518x_probe(struct i2c_client *client,
++			    const struct i2c_device_id *id)
++{
++	struct tps6518x *tps6518x;
++	struct tps6518x_platform_data *pdata = client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
++	int ret = 0;
++
++	//printk("tps6518x_probe calling\n");
++
++	if (!np)
++		return -ENODEV;
++
++	gpio_regulator = devm_regulator_get(&client->dev, "SENSOR");
++	if (!IS_ERR(gpio_regulator)) {
++		ret = regulator_enable(gpio_regulator);
++		if (ret) {
++			dev_err(&client->dev, "gpio set voltage error\n");
++			return ret;
++		}
++	}
++
++
++	/* Create the PMIC data structure */
++	tps6518x = kzalloc(sizeof(struct tps6518x), GFP_KERNEL);
++	if (tps6518x == NULL) {
++		kfree(client);
++		return -ENOMEM;
++	}
++
++	/* Initialize the PMIC data structure */
++	i2c_set_clientdata(client, tps6518x);
++	tps6518x->dev = &client->dev;
++	tps6518x->i2c_client = client;
++       tps6518x->revID = TPS65185_PASS2;
++	tps6518x_client = client;
++	ret = tps6518x_detect(client, NULL);
++	if (ret)
++		goto err1;
++
++	mfd_add_devices(tps6518x->dev, -1, tps6518x_devs,
++			ARRAY_SIZE(tps6518x_devs),
++			NULL, 0, NULL);
++
++	if (tps6518x->dev->of_node) {
++		pdata = tps6518x_i2c_parse_dt_pdata(tps6518x->dev);
++		if (IS_ERR(pdata)) {
++			ret = PTR_ERR(pdata);
++			goto err2;
++		}
++
++	}
++	tps6518x->pdata = pdata;
++
++	dev_info(&client->dev, "PMIC TPS6518x for eInk display\n");
++
++	//printk("tps6518x_probe success\n");
++
++	return ret;
++
++err2:
++	mfd_remove_devices(tps6518x->dev);
++err1:
++	kfree(tps6518x);
++
++	return ret;
++}
++
++
++static int tps6518x_remove(struct i2c_client *i2c)
++{
++	struct tps6518x *tps6518x = i2c_get_clientdata(i2c);
++
++	mfd_remove_devices(tps6518x->dev);
++
++	return 0;
++}
++
++static int tps6518x_suspend(struct i2c_client *client, pm_message_t state)
++{
++	return 0;
++}
++
++static int tps6518x_resume(struct i2c_client *client)
++{
++	return 0;
++}
++
++/* Return 0 if detection is successful, -ENODEV otherwise */
++static int tps6518x_detect(struct i2c_client *client,
++			  struct i2c_board_info *info)
++{
++	//struct tps6518x_platform_data *pdata = client->dev.platform_data;
++	struct i2c_adapter *adapter = client->adapter;
++	u8 revId;
++       //printk("tps6518x_detect calling\n");
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
++		return -ENODEV;
++
++	/* identification */
++	revId = i2c_smbus_read_byte_data(client,
++		  REG_TPS6518x_REVID);
++	//tps6518x->revID=revId;
++	/*
++	 * Known rev-ids
++	 * tps165180 pass 1 = 0x50, tps65180 pass2 = 0x60, tps65181 pass1 = 0x51, tps65181 pass2 = 0x61,
++	 * tps65182,
++	 * tps65185 pass0 = 0x45, tps65186 pass0 0x46, tps65185 pass1 = 0x55, tps65186 pass1 0x56, tps65185 pass2 = 0x65, tps65186 pass2 0x66
++	 */
++	if (!((revId == TPS65180_PASS1) ||
++		 (revId == TPS65181_PASS1) ||
++		 (revId == TPS65180_PASS2) ||
++		 (revId == TPS65181_PASS2) ||
++		 (revId == TPS65185_PASS0) ||
++		 (revId == TPS65186_PASS0) ||
++		 (revId == TPS65185_PASS1) ||
++		 (revId == TPS65186_PASS1) ||
++		 (revId == TPS65185_PASS2) ||
++		 (revId == TPS65186_PASS2)))
++	{
++		dev_info(&adapter->dev,
++		    "Unsupported chip (Revision ID=0x%02X).\n",  revId);
++		return -ENODEV;
++	}
++
++	if (info) {
++		strlcpy(info->type, "tps6518x_sensor", I2C_NAME_SIZE);
++	}
++       //printk("tps6518x_detect success\n");
++
++	return 0;
++}
++
++static const struct i2c_device_id tps6518x_id[] = {
++	{ "tps6518x", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, tps6518x_id);
++
++static const struct of_device_id tps6518x_dt_ids[] = {
++	{
++		.compatible = "ti,tps6518x",
++		.data = (void *) &tps6518x_id[0],
++	}, {
++		/* sentinel */
++	}
++};
++MODULE_DEVICE_TABLE(of, tps6518x_dt_ids);
++
++
++static struct i2c_driver tps6518x_driver = {
++	.driver = {
++		   .name = "tps6518x",
++		   .owner = THIS_MODULE,
++		   .of_match_table = tps6518x_dt_ids,
++	},
++	.probe = tps6518x_probe,
++	.remove = tps6518x_remove,
++	.id_table = tps6518x_id,
++	.detect = tps6518x_detect,
++	.address_list = &normal_i2c[0],
++};
++
++static int __init tps6518x_init(void)
++{
++	return i2c_add_driver(&tps6518x_driver);
++}
++
++static void __exit tps6518x_exit(void)
++{
++	i2c_del_driver(&tps6518x_driver);
++}
++
++/*
++ * Module entry points
++ */
++subsys_initcall(tps6518x_init);
++module_exit(tps6518x_exit);
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index ed96adc..51db54c 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -550,6 +550,10 @@ config REGULATOR_MAX17135
+ 	tristate "Maxim MAX17135 Regulator Support"
+ 	depends on MFD_MAX17135
+ 
++config REGULATOR_TPS6518X
++        tristate "Texas Instruments TPS6518X Regulator Support"
++        depends on MFD_TPS6518X
++
+ config REGULATOR_MAX77620
+ 	tristate "Maxim 77620/MAX20024 voltage regulator"
+ 	depends on MFD_MAX77620 || COMPILE_TEST
+diff --git a/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/regulator/Makefile.orig b/home/ekerebel/maptattoo-local/imx-yocto-bsp-5.10/patchPrepare/drivers/regulator/Makefile
+index 0959759..532d97a 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -68,6 +68,7 @@ obj-$(CONFIG_REGULATOR_LTC3676) += ltc3676.o
+ obj-$(CONFIG_REGULATOR_MAX14577) += max14577-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+ obj-$(CONFIG_REGULATOR_MAX17135) += max17135-regulator.o
++obj-$(CONFIG_REGULATOR_TPS6518X) += tps6518x-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX77620) += max77620-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX77650) += max77650-regulator.o
+ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+diff --git a/drivers/regulator/tps6518x-regulator.c b/drivers/regulator/tps6518x-regulator.c
+new file mode 100644
+index 0000000..5f0c791
+--- /dev/null
++++ b/drivers/regulator/tps6518x-regulator.c
+@@ -0,0 +1,820 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
++#include <linux/mfd/tps6518x.h>
++#include <linux/gpio.h>
++#include <linux/pmic_status.h>
++#include <linux/of_gpio.h>
++
++struct tps6518x_data {
++	int num_regulators;
++	struct tps6518x *tps6518x;
++	struct regulator_dev **rdev;
++};
++
++
++static int tps6518x_pass_num = { 2 };
++static int tps6518x_vcom = { -2680000 };
++static int tps65180_current_Enable_Register = 0;
++
++static int tps6518x_is_power_good(struct tps6518x *tps6518x);
++/*
++ * to_reg_val(): Creates a register value with new data
++ *
++ * Creates a new register value for a particular field.  The data
++ * outside of the new field is not modified.
++ *
++ * @cur_reg: current value in register
++ * @reg_mask: mask of field bits to be modified
++ * @fld_val: new value for register field.
++ */
++static unsigned int to_reg_val(unsigned int cur_reg, unsigned int fld_mask,
++							   unsigned int fld_val)
++{
++	return (cur_reg & (~fld_mask)) | fld_val;
++}
++
++/*
++ * Regulator operations
++ */
++/* Convert uV to the VCOM register bitfield setting */
++
++static int vcom_rs_to_uV(unsigned int reg_setting)
++{
++	if (reg_setting <= TPS65180_VCOM_MIN_SET)
++		return TPS65180_VCOM_MIN_uV;
++	if (reg_setting >= TPS65180_VCOM_MAX_SET)
++		return TPS65180_VCOM_MAX_uV;
++	return -(reg_setting * TPS65180_VCOM_STEP_uV);
++}
++static int vcom2_rs_to_uV(unsigned int reg_setting)
++{
++	if (reg_setting <= TPS65185_VCOM_MIN_SET)
++		return TPS65185_VCOM_MIN_uV;
++	if (reg_setting >= TPS65185_VCOM_MAX_SET)
++		return TPS65185_VCOM_MAX_uV;
++	return -(reg_setting * TPS65185_VCOM_STEP_uV);
++}
++
++
++static int vcom_uV_to_rs(int uV)
++{
++	if (uV <= TPS65180_VCOM_MIN_uV)
++		return TPS65180_VCOM_MIN_SET;
++	if (uV >= TPS65180_VCOM_MAX_uV)
++		return TPS65180_VCOM_MAX_SET;
++	return (-uV) / TPS65180_VCOM_STEP_uV;
++}
++
++static int vcom2_uV_to_rs(int uV)
++{
++	if (uV <= TPS65185_VCOM_MIN_uV)
++		return TPS65185_VCOM_MIN_SET;
++	if (uV >= TPS65185_VCOM_MAX_uV)
++		return TPS65185_VCOM_MAX_SET;
++	return (-uV) / TPS65185_VCOM_STEP_uV;
++}
++
++static int epdc_pwr0_enable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	gpio_set_value(tps6518x->gpio_pmic_powerup, 1);
++
++	return 0;
++
++}
++
++static int epdc_pwr0_disable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	gpio_set_value(tps6518x->gpio_pmic_powerup, 0);
++
++	return 0;
++
++}
++static int tps6518x_v3p3_enable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	gpio_set_value(tps6518x->gpio_pmic_powerup, 1);
++	return 0;
++}
++
++static int tps6518x_v3p3_disable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	gpio_set_value(tps6518x->gpio_pmic_powerup, 0);
++	return 0;
++
++}
++static int tps6518x_v3p3_is_enabled(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	int gpio = gpio_get_value(tps6518x->gpio_pmic_powerup);
++
++	if (gpio == 0)
++		return 0;
++	else
++		return 1;
++}
++
++static int tps6518x_vcom_set_voltage(struct regulator_dev *reg,
++					int minuV, int uV, unsigned *selector)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	unsigned int cur_reg_val; /* current register value to modify */
++	unsigned int new_reg_val; /* new register value to write */
++	int retval;
++	//printk("tps6518x_vcom_set_voltage >%i",uV);
++	/*
++	 * this will not work on tps65182
++	 */
++	if (tps6518x->revID == 65182)
++		return 0;
++	//
++#if 0
++	if (uV < 200000)
++		return 0;
++#endif
++
++	switch (tps6518x->revID & 15)
++	{
++		case 0 : /* TPS65180 */
++		case 1 : /* TPS65181 */
++		case 4 : /* TPS65180-rev1 */
++			tps6518x_reg_read(REG_TPS65180_VCOM_ADJUST,&cur_reg_val);
++			new_reg_val = to_reg_val(cur_reg_val,
++					BITFMASK(VCOM_SET),
++					BITFVAL(VCOM_SET, vcom_uV_to_rs(uV)));
++
++			retval = tps6518x_reg_write(REG_TPS65180_VCOM_ADJUST,
++					new_reg_val);
++			break;
++		case 5 : /* TPS65185 */
++		case 6 : /* TPS65186 */
++			gpio_set_value(tps6518x->gpio_pmic_wakeup,1);
++			printk("tps6518x_vcom_set_voltage uV=%i, VCOM1=%i",uV,vcom2_uV_to_rs(uV) & 255);
++			retval = tps6518x_reg_write(REG_TPS65185_VCOM1,
++					vcom2_uV_to_rs(uV) & 255);
++			tps6518x_reg_read( REG_TPS65185_VCOM2,&cur_reg_val);
++			new_reg_val = to_reg_val(cur_reg_val,
++					BITFMASK(VCOM2_SET),
++					BITFVAL(VCOM2_SET, vcom2_uV_to_rs(uV)/256));
++			printk("VCOM2=%i",new_reg_val);
++			retval = tps6518x_reg_write(REG_TPS65185_VCOM2,
++					new_reg_val);
++			//printk("tps6518x_vcom_set_voltage retval=%i",retval);
++			break;
++		default :
++		retval = -1;
++	}
++	return retval;
++}
++
++static int tps6518x_vcom_get_voltage(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	unsigned int cur_reg_val; /* current register value */
++	unsigned int cur_reg2_val; /* current register value */
++	unsigned int cur_fld_val; /* current bitfield value*/
++	int vcomValue;
++	//printk("tps6518x_vcom_get_voltage");
++	/*
++	 * this will not work on tps65182
++	 */
++	if (tps6518x->revID == 65182)
++		return 0;
++	//
++	switch (tps6518x->revID & 15)
++	{
++		case 0 : /* TPS65180 */
++		case 1 : /* TPS65181 */
++		case 4 : /* TPS65180-rev1 */
++			tps6518x_reg_read(REG_TPS65180_VCOM_ADJUST, &cur_reg_val);
++			cur_fld_val = BITFEXT(cur_reg_val, VCOM_SET);
++			vcomValue = vcom_rs_to_uV(cur_fld_val);
++			break;
++		case 5 : /* TPS65185 */
++		case 6 : /* TPS65186 */
++			tps6518x_reg_read(REG_TPS65185_VCOM1,&cur_reg_val);
++			tps6518x_reg_read(REG_TPS65185_VCOM2,&cur_reg2_val);
++			cur_reg_val |= 256 * (1 & cur_reg2_val);
++			vcomValue = vcom2_rs_to_uV(cur_reg_val);
++			break;
++		default:
++			vcomValue = 0;
++	}
++	//printk("voltage=%i",vcomValue);
++	return vcomValue;
++
++}
++
++static int tps6518x_vcom_enable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	unsigned int cur_reg_val; /* current register value */
++	int vcomEnable = 0;
++	/*
++	 * check for the TPS65182 device
++	 */
++	if (tps6518x->revID == 65182)
++	{
++		gpio_set_value(tps6518x->gpio_pmic_vcom_ctrl,vcomEnable);
++		return 0;
++	}
++	//printk("tps6518x_vcom_enable");
++	/*
++	 * Check to see if we need to set the VCOM voltage.
++	 * Should only be done one time. And, we can
++	 * only change vcom voltage if we have been enabled.
++	 */
++	if(tps6518x_vcom_get_voltage(reg)>-1000000){
++		tps6518x->vcom_setup=false;
++		tps6518x->vcom_uV=-2680000;
++	}
++	if (!tps6518x->vcom_setup && tps6518x_is_power_good(tps6518x)) {
++		//printk("tps6518x_vcom_enable setup, voltage > %i",tps6518x->vcom_uV);
++		if(tps6518x->vcom_uV>-1000000)
++			tps6518x->vcom_uV=-2880000;
++		//printk("tps6518x_vcom_enable setup, voltage adjusted > %i",tps6518x->vcom_uV);
++		tps6518x_vcom_set_voltage(reg,
++			tps6518x->vcom_uV,
++			tps6518x->vcom_uV,
++			NULL);
++		tps6518x->vcom_setup = true;
++	}
++	//printk("tps6518x_vcom_enable, voltage==>%i",tps6518x_vcom_get_voltage(reg));
++	switch (tps6518x->revID & 15)
++	{
++		case 0 : /* TPS65180 */
++		case 1 : /* TPS65181 */
++		case 4 : /* TPS65180-rev1 */
++			vcomEnable = 1;
++			break;
++		case 5 : /* TPS65185 */
++		case 6 : /* TPS65186 */
++			tps6518x_reg_read(REG_TPS65185_VCOM2,&cur_reg_val);
++			// do not enable vcom if HiZ bit is set
++			if (cur_reg_val & (1<<VCOM_HiZ_LSH))
++				vcomEnable = 0;
++			else
++				vcomEnable = 1;
++			break;
++		default:
++			vcomEnable = 0;
++	}
++	gpio_set_value(tps6518x->gpio_pmic_vcom_ctrl,vcomEnable);
++
++	return 0;
++}
++
++static int tps6518x_vcom_disable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	//printk("tps6518x_vcom_disable");
++	gpio_set_value(tps6518x->gpio_pmic_vcom_ctrl,0);
++	return 0;
++}
++
++static int tps6518x_vcom_is_enabled(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	int gpio = gpio_get_value(tps6518x->gpio_pmic_vcom_ctrl);
++	//printk("tps6518x_vcom_is_enabled");
++	if (gpio == 0)
++		return 0;
++	else
++		return 1;
++}
++
++
++static int tps6518x_is_power_good(struct tps6518x *tps6518x)
++{
++	/*
++	 * XOR of polarity (starting value) and current
++	 * value yields whether power is good.
++	 printk("tps6518x_is_power_good");*/
++	return gpio_get_value(tps6518x->gpio_pmic_pwrgood) ^
++		tps6518x->pwrgood_polarity;
++}
++
++static int tps6518x_wait_power_good(struct tps6518x *tps6518x)
++{
++	int i;
++	for (i = 0; i < tps6518x->max_wait * 3; i++) {
++		if (tps6518x_is_power_good(tps6518x))
++			return 0;
++
++		msleep(1);
++	}
++	return -ETIMEDOUT;
++}
++
++static int tps6518x_display_enable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	unsigned int cur_reg_val; /* current register value to modify */
++	unsigned int fld_mask;	  /* register mask for bitfield to modify */
++	unsigned int fld_val;	  /* new bitfield value to write */
++	unsigned int new_reg_val; /* new register value to write */
++	if (tps6518x->revID == 65182)
++	{
++		epdc_pwr0_enable(reg);
++	}
++	else
++	{
++		gpio_set_value(tps6518x->gpio_pmic_wakeup,1);
++
++		/* enable display regulators */
++		cur_reg_val = tps65180_current_Enable_Register & 0x3f;
++		fld_mask = BITFMASK(VDDH_EN) | BITFMASK(VPOS_EN) |
++			BITFMASK(VEE_EN) | BITFMASK(VNEG_EN);
++		fld_val = BITFVAL(VDDH_EN, true) | BITFVAL(VPOS_EN, true) |
++			BITFVAL(VEE_EN, true) | BITFVAL(VNEG_EN, true) | BITFVAL(VCOM_EN, true);
++		new_reg_val = tps65180_current_Enable_Register = to_reg_val(cur_reg_val, fld_mask, fld_val);
++		tps6518x_reg_write(REG_TPS65180_ENABLE, new_reg_val);
++
++		/* turn on display regulators */
++		cur_reg_val = tps65180_current_Enable_Register & 0x3f;
++		fld_mask = BITFMASK(ACTIVE);
++		fld_val = BITFVAL(ACTIVE, true);
++		new_reg_val = tps65180_current_Enable_Register = to_reg_val(cur_reg_val, fld_mask, fld_val);
++		tps6518x_reg_write(REG_TPS65180_ENABLE, new_reg_val);
++	}
++
++	return tps6518x_wait_power_good(tps6518x);
++}
++
++static int tps6518x_display_disable(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++	unsigned int cur_reg_val; /* current register value to modify */
++	unsigned int fld_mask;	  /* register mask for bitfield to modify */
++	unsigned int fld_val;	  /* new bitfield value to write */
++	unsigned int new_reg_val; /* new register value to write */
++
++	if (tps6518x->revID == 65182)
++	{
++		epdc_pwr0_disable(reg);
++	}
++	else
++	{
++		/* turn off display regulators */
++		cur_reg_val = tps65180_current_Enable_Register & 0x3f;
++		fld_mask = BITFMASK(VCOM_EN) | BITFMASK(STANDBY);
++		fld_val = BITFVAL(VCOM_EN, true) | BITFVAL(STANDBY, true);
++		new_reg_val = tps65180_current_Enable_Register = to_reg_val(cur_reg_val, fld_mask, fld_val);
++		tps6518x_reg_write(REG_TPS65180_ENABLE, new_reg_val);
++
++	}
++
++	msleep(tps6518x->max_wait);
++
++	return 0;
++}
++
++static int tps6518x_display_is_enabled(struct regulator_dev *reg)
++{
++	struct tps6518x *tps6518x = rdev_get_drvdata(reg);
++
++	if (tps6518x->revID == 65182)
++		return gpio_get_value(tps6518x->gpio_pmic_wakeup) ? 1:0;
++	else
++		return tps65180_current_Enable_Register & BITFMASK(ACTIVE);
++}
++
++/*
++ * Regulator operations
++ */
++
++static struct regulator_ops tps6518x_display_ops = {
++	.enable = tps6518x_display_enable,
++	.disable = tps6518x_display_disable,
++	.is_enabled = tps6518x_display_is_enabled,
++};
++
++static struct regulator_ops tps6518x_vcom_ops = {
++	.enable = tps6518x_vcom_enable,
++	.disable = tps6518x_vcom_disable,
++	.get_voltage = tps6518x_vcom_get_voltage,
++	.set_voltage = tps6518x_vcom_set_voltage,
++	.is_enabled = tps6518x_vcom_is_enabled,
++};
++
++static struct regulator_ops tps6518x_v3p3_ops = {
++	.enable = tps6518x_v3p3_enable,
++	.disable = tps6518x_v3p3_disable,
++	.is_enabled = tps6518x_v3p3_is_enabled,
++};
++
++/*
++ * Regulator descriptors
++ */
++static struct regulator_desc tps6518x_reg[TPS6518x_NUM_REGULATORS] = {
++{
++	.name = "DISPLAY",
++	.id = TPS6518x_DISPLAY,
++	.ops = &tps6518x_display_ops,
++	.type = REGULATOR_VOLTAGE,
++	.owner = THIS_MODULE,
++},
++{
++	.name = "VCOM",
++	.id = TPS6518x_VCOM,
++	.ops = &tps6518x_vcom_ops,
++	.type = REGULATOR_VOLTAGE,
++	.owner = THIS_MODULE,
++},
++{
++	.name = "V3P3",
++	.id = TPS6518x_V3P3,
++	.ops = &tps6518x_v3p3_ops,
++	.type = REGULATOR_VOLTAGE,
++	.owner = THIS_MODULE,
++},
++};
++
++static void tps6518x_setup_timings(struct tps6518x *tps6518x)
++{
++
++	int temp0, temp1, temp2, temp3;
++
++	/* read the current setting in the PMIC */
++	if ((tps6518x->revID == TPS65180_PASS1) || (tps6518x->revID == TPS65181_PASS1) ||
++	   (tps6518x->revID == TPS65180_PASS2) || (tps6518x->revID == TPS65181_PASS2)) {
++	   tps6518x_reg_read(REG_TPS65180_PWRSEQ0, &temp0);
++	   tps6518x_reg_read(REG_TPS65180_PWRSEQ1, &temp1);
++	   tps6518x_reg_read(REG_TPS65180_PWRSEQ2, &temp2);
++
++	   if ((temp0 != tps6518x->pwr_seq0) ||
++		(temp1 != tps6518x->pwr_seq1) ||
++		(temp2 != tps6518x->pwr_seq2)) {
++		tps6518x_reg_write(REG_TPS65180_PWRSEQ0, tps6518x->pwr_seq0);
++		tps6518x_reg_write(REG_TPS65180_PWRSEQ1, tps6518x->pwr_seq1);
++		tps6518x_reg_write(REG_TPS65180_PWRSEQ2, tps6518x->pwr_seq2);
++	    }
++	}
++
++	if ((tps6518x->revID == TPS65185_PASS0) ||
++		 (tps6518x->revID == TPS65186_PASS0) ||
++		 (tps6518x->revID == TPS65185_PASS1) ||
++		 (tps6518x->revID == TPS65186_PASS1) ||
++		 (tps6518x->revID == TPS65185_PASS2) ||
++		 (tps6518x->revID == TPS65186_PASS2)) {
++	   tps6518x_reg_read(REG_TPS65185_UPSEQ0, &temp0);
++	   tps6518x_reg_read(REG_TPS65185_UPSEQ1, &temp1);
++	   tps6518x_reg_read(REG_TPS65185_DWNSEQ0, &temp2);
++	   tps6518x_reg_read(REG_TPS65185_DWNSEQ1, &temp3);
++	   if ((temp0 != tps6518x->upseq0) ||
++		(temp1 != tps6518x->upseq1) ||
++		(temp2 != tps6518x->dwnseq0) ||
++		(temp3 != tps6518x->dwnseq1)) {
++		tps6518x_reg_write(REG_TPS65185_UPSEQ0, tps6518x->upseq0);
++		tps6518x_reg_write(REG_TPS65185_UPSEQ1, tps6518x->upseq1);
++		tps6518x_reg_write(REG_TPS65185_DWNSEQ0, tps6518x->dwnseq0);
++		tps6518x_reg_write(REG_TPS65185_DWNSEQ1, tps6518x->dwnseq1);
++	    }
++	}
++}
++
++#define CHECK_PROPERTY_ERROR_KFREE(prop) \
++do { \
++	int ret = of_property_read_u32(tps6518x->dev->of_node, \
++					#prop, &tps6518x->prop); \
++	if (ret < 0) { \
++		return ret;	\
++	}	\
++} while (0);
++
++#ifdef CONFIG_OF
++static int tps6518x_pmic_dt_parse_pdata(struct platform_device *pdev,
++					struct tps6518x_platform_data *pdata)
++{
++	struct tps6518x *tps6518x = dev_get_drvdata(pdev->dev.parent);
++	struct device_node *pmic_np, *regulators_np, *reg_np;
++	struct tps6518x_regulator_data *rdata;
++	int i, ret;
++
++	pmic_np = of_node_get(tps6518x->dev->of_node);
++	if (!pmic_np) {
++		dev_err(&pdev->dev, "could not find pmic sub-node\n");
++		return -ENODEV;
++	}
++
++	regulators_np = of_find_node_by_name(pmic_np, "regulators");
++	if (!regulators_np) {
++		dev_err(&pdev->dev, "could not find regulators sub-node\n");
++		return -EINVAL;
++	}
++
++	pdata->num_regulators = of_get_child_count(regulators_np);
++	dev_dbg(&pdev->dev, "num_regulators %d\n", pdata->num_regulators);
++
++	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
++				pdata->num_regulators, GFP_KERNEL);
++	if (!rdata) {
++		of_node_put(regulators_np);
++		dev_err(&pdev->dev, "could not allocate memory for"
++			"regulator data\n");
++		return -ENOMEM;
++	}
++
++	pdata->regulators = rdata;
++	for_each_child_of_node(regulators_np, reg_np) {
++		for (i = 0; i < ARRAY_SIZE(tps6518x_reg); i++)
++			if (!of_node_cmp(reg_np->name, tps6518x_reg[i].name))
++				break;
++
++		if (i == ARRAY_SIZE(tps6518x_reg)) {
++			dev_warn(&pdev->dev, "don't know how to configure"
++				"regulator %s\n", reg_np->name);
++			continue;
++		}
++
++		rdata->id = i;
++		rdata->initdata = of_get_regulator_init_data(&pdev->dev,
++							     reg_np,&tps6518x_reg[i]);
++		rdata->reg_node = reg_np;
++		rdata++;
++	}
++	of_node_put(regulators_np);
++
++	tps6518x->max_wait = (6 + 6 + 6 + 6);
++
++	tps6518x->gpio_pmic_wakeup = of_get_named_gpio(pmic_np,
++					"gpio_pmic_wakeup", 0);
++	if (!gpio_is_valid(tps6518x->gpio_pmic_wakeup)) {
++		dev_err(&pdev->dev, "no epdc pmic wakeup pin available\n");
++		goto err;
++	}
++	ret = devm_gpio_request_one(&pdev->dev, tps6518x->gpio_pmic_wakeup,
++				GPIOF_OUT_INIT_LOW, "epdc-pmic-wake");
++	if (ret < 0)
++		goto err;
++
++	tps6518x->gpio_pmic_vcom_ctrl = of_get_named_gpio(pmic_np,
++					"gpio_pmic_vcom_ctrl", 0);
++	if (!gpio_is_valid(tps6518x->gpio_pmic_vcom_ctrl)) {
++		dev_err(&pdev->dev, "no epdc pmic vcom_ctrl pin available\n");
++		goto err;
++	}
++	ret = devm_gpio_request_one(&pdev->dev, tps6518x->gpio_pmic_vcom_ctrl,
++				GPIOF_OUT_INIT_LOW, "epdc-vcom");
++	if (ret < 0)
++		goto err;
++
++	tps6518x->gpio_pmic_powerup = of_get_named_gpio(pmic_np,
++					"gpio_pmic_powerup", 0);
++	if (!gpio_is_valid(tps6518x->gpio_pmic_powerup)) {
++		dev_err(&pdev->dev, "no epdc pmic powerup pin available\n");
++		goto err;
++	}
++	ret = devm_gpio_request_one(&pdev->dev, tps6518x->gpio_pmic_powerup,
++				GPIOF_OUT_INIT_LOW, "epdc-powerup");
++	if (ret < 0)
++		goto err;
++
++	tps6518x->gpio_pmic_intr = of_get_named_gpio(pmic_np,
++					"gpio_pmic_intr", 0);
++	if (!gpio_is_valid(tps6518x->gpio_pmic_intr)) {
++		dev_err(&pdev->dev, "no epdc pmic intr pin available\n");
++		goto err;
++	}
++	ret = devm_gpio_request_one(&pdev->dev, tps6518x->gpio_pmic_intr,
++				GPIOF_IN, "epdc-pmic-int");
++	if (ret < 0)
++		goto err;
++
++	tps6518x->gpio_pmic_pwrgood = of_get_named_gpio(pmic_np,
++					"gpio_pmic_pwrgood", 0);
++	if (!gpio_is_valid(tps6518x->gpio_pmic_pwrgood)) {
++		dev_err(&pdev->dev, "no epdc pmic pwrgood pin available\n");
++		goto err;
++	}
++	ret = devm_gpio_request_one(&pdev->dev, tps6518x->gpio_pmic_pwrgood,
++				GPIOF_IN, "epdc-pwrstat");
++	if (ret < 0)
++		goto err;
++
++err:
++	return 0;
++
++}
++#else
++static int tps6518x_pmic_dt_parse_pdata(struct platform_device *pdev,
++					struct tps6518x *tps6518x)
++{
++	return 0;
++}
++#endif	/* !CONFIG_OF */
++
++/*
++ * Regulator init/probing/exit functions
++ */
++static int tps6518x_regulator_probe(struct platform_device *pdev)
++{
++	struct tps6518x *tps6518x = dev_get_drvdata(pdev->dev.parent);
++	struct tps6518x_platform_data *pdata = tps6518x->pdata;
++	struct tps6518x_data *priv;
++	struct regulator_dev **rdev;
++	struct regulator_config config = { };
++	int size, i, ret = 0;
++
++       //printk("tps6518x_regulator_probe starting\n");
++
++	if (tps6518x->dev->of_node) {
++		ret = tps6518x_pmic_dt_parse_pdata(pdev, pdata);
++		if (ret)
++			return ret;
++	}
++	priv = devm_kzalloc(&pdev->dev, sizeof(struct tps6518x_data),
++			       GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
++	priv->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
++	if (!priv->rdev)
++		return -ENOMEM;
++
++	rdev = priv->rdev;
++	priv->num_regulators = pdata->num_regulators;
++	platform_set_drvdata(pdev, priv);
++	//printk("EK after drvdata, size=%u\n",size);
++	tps6518x->vcom_setup = false;
++	tps6518x->pass_num = tps6518x_pass_num;
++	tps6518x->vcom_uV = tps6518x_vcom;
++	//printk("EK before loop\n");
++	for (i = 0; i < pdata->num_regulators; i++) {
++		int id = pdata->regulators[i].id;
++
++		config.dev = tps6518x->dev;
++		config.init_data = pdata->regulators[i].initdata;
++		config.driver_data = tps6518x;
++		config.of_node = pdata->regulators[i].reg_node;
++		//printk("EK loop reg: %s",tps6518x_reg[id].name);
++		rdev[i] = regulator_register(&tps6518x_reg[id], &config);
++		if (IS_ERR(rdev[i])) {
++			ret = PTR_ERR(rdev[i]);
++			dev_err(&pdev->dev, "regulator init failed for %d\n",
++					id);
++			rdev[i] = NULL;
++			goto err;
++		}
++	}
++
++	/*
++	 * Set up PMIC timing values.
++	 * Should only be done one time!  Timing values may only be
++	 * changed a limited number of times according to spec.
++	 */
++	tps6518x_setup_timings(tps6518x);
++
++       //printk("tps6518x_regulator_probe success\n");
++	return 0;
++err:
++	while (--i >= 0)
++		regulator_unregister(rdev[i]);
++	return ret;
++}
++
++static int tps6518x_regulator_remove(struct platform_device *pdev)
++{
++	struct tps6518x_data *priv = platform_get_drvdata(pdev);
++	struct regulator_dev **rdev = priv->rdev;
++	int i;
++
++	for (i = 0; i < priv->num_regulators; i++)
++		regulator_unregister(rdev[i]);
++	return 0;
++}
++
++static const struct platform_device_id tps6518x_pmic_id[] = {
++	{ "tps6518x-pmic", 0},
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(platform, tps6518x_pmic_id);
++
++static struct platform_driver tps6518x_regulator_driver = {
++	.probe = tps6518x_regulator_probe,
++	.remove = tps6518x_regulator_remove,
++	.id_table = tps6518x_pmic_id,
++	.driver = {
++		.name = "tps6518x-pmic",
++	},
++};
++
++static int __init tps6518x_regulator_init(void)
++{
++	return platform_driver_register(&tps6518x_regulator_driver);
++}
++subsys_initcall_sync(tps6518x_regulator_init);
++
++static void __exit tps6518x_regulator_exit(void)
++{
++	platform_driver_unregister(&tps6518x_regulator_driver);
++}
++module_exit(tps6518x_regulator_exit);
++
++
++/*
++ * Parse user specified options (`tps6518x:')
++ * example:
++ *   tps6518x:pass=2,vcom=-1250000
++ */
++static int __init tps6518x_setup(char *options)
++{
++	int ret;
++	char *opt;
++	unsigned long ulResult;
++	while ((opt = strsep(&options, ",")) != NULL) {
++		if (!*opt)
++			continue;
++		if (!strncmp(opt, "pass=", 5)) {
++			ret = kstrtoul((const char *)(opt + 5), 0, &ulResult);
++			tps6518x_pass_num = ulResult;
++			if (ret < 0)
++				return ret;
++		}
++		if (!strncmp(opt, "vcom=", 5)) {
++			int offs = 5;
++			if (opt[5] == '-')
++				offs = 6;
++			ret = kstrtoul((const char *)(opt + offs), 0, &ulResult);
++			tps6518x_vcom = (int) ulResult;
++			if (ret < 0)
++				return ret;
++			tps6518x_vcom = -tps6518x_vcom;
++		}
++	}
++	//printk("tps6518x_setup tps6518x_vcom=%i",tps6518x_vcom);
++	return 1;
++}
++
++__setup("tps6518x:", tps6518x_setup);
++
++static int __init tps65182_setup(char *options)
++{
++	int ret;
++	char *opt;
++	unsigned long ulResult;
++	while ((opt = strsep(&options, ",")) != NULL) {
++		if (!*opt)
++			continue;
++		if (!strncmp(opt, "pass=", 5)) {
++			ret = kstrtoul((const char *)(opt + 5), 0, &ulResult);
++			tps6518x_pass_num = ulResult;
++			if (ret < 0)
++				return ret;
++		}
++		if (!strncmp(opt, "vcom=", 5)) {
++			int offs = 5;
++			if (opt[5] == '-')
++				offs = 6;
++			ret = kstrtoul((const char *)(opt + offs), 0, &ulResult);
++			tps6518x_vcom = (int) ulResult;
++			if (ret < 0)
++				return ret;
++			tps6518x_vcom = -tps6518x_vcom;
++		}
++	}
++
++	return 1;
++}
++
++__setup("tps65182:", tps65182_setup);
++
++
++/* Module information */
++MODULE_DESCRIPTION("TPS6518x regulator driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/tps6518x.h b/include/linux/mfd/tps6518x.h
+new file mode 100644
+index 0000000..82297c0
+--- /dev/null
++++ b/include/linux/mfd/tps6518x.h
+@@ -0,0 +1,357 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ *
++ */
++#ifndef __LINUX_REGULATOR_TPS6518x_H_
++#define __LINUX_REGULATOR_TPS6518x_H_
++
++/*
++ * EPDC PMIC I2C address
++ * PAPYRUS II 1p1 and later uses 0x68, others 0x48
++ */
++#define EPDC_PMIC_I2C_ADDR 0x68
++
++/*
++ * currently supported rev IDs
++ */
++//#define TPS65180_PASS1 0x54
++//#define TPS65181_PASS1 0x55
++#define TPS65180_PASS1 0x50
++#define TPS65181_PASS1 0x51
++#define TPS65180_PASS2 0x60
++#define TPS65181_PASS2 0x61
++#define TPS65185_PASS0 0x45
++#define TPS65186_PASS0 0x46
++#define TPS65185_PASS1 0x55
++#define TPS65186_PASS1 0x56
++#define TPS65185_PASS2 0x65
++#define TPS65186_PASS2 0x66
++
++/*
++ * PMIC Register Addresses
++ */
++enum {
++    REG_TPS6518x_TMST_VAL = 0x0,
++    REG_TPS65185_ENABLE,
++    REG_TPS65185_VADJ,
++    REG_TPS65185_VCOM1,
++    REG_TPS65185_VCOM2,
++    REG_TPS65185_INT_EN1,
++    REG_TPS65185_INT_EN2,
++    REG_TPS65185_INT1,
++    REG_TPS65185_INT2,
++    REG_TPS65185_UPSEQ0,
++    REG_TPS65185_UPSEQ1,
++    REG_TPS65185_DWNSEQ0,
++    REG_TPS65185_DWNSEQ1,
++    REG_TPS65185_TMST1,
++    REG_TPS65185_TMST2,
++    REG_TPS6518x_PG,
++    REG_TPS6518x_REVID,
++    TPS6518x_REG_NUM,
++};
++
++enum {
++    REG_TPS65180_TMST_VAL = 0x0,
++    REG_TPS65180_ENABLE,
++    REG_TPS65180_VP_ADJUST,
++    REG_TPS65180_VN_ADJUST,
++    REG_TPS65180_VCOM_ADJUST,
++    REG_TPS65180_INT_EN1,
++    REG_TPS65180_INT_EN2,
++    REG_TPS65180_INT1,
++    REG_TPS65180_INT2,
++    REG_TPS65180_PWRSEQ0,
++    REG_TPS65180_PWRSEQ1,
++    REG_TPS65180_PWRSEQ2,
++    REG_TPS65180_TMST_CONFIG,
++    REG_TPS65180_TMST_OS,
++    REG_TPS65180_TMST_HYST,
++    REG_TPS65180_PG_STATUS,
++    REG_TPS65180_REVID,
++    REG_TPS65180_FIX_READ_PTR,
++    TPS65180_REG_NUM,
++};
++
++#define TPS6518x_MAX_REGISTER   0xFF
++
++/*
++ * Bitfield macros that use rely on bitfield width/shift information.
++ */
++#define BITFMASK(field) (((1U << (field ## _WID)) - 1) << (field ## _LSH))
++#define BITFVAL(field, val) ((val) << (field ## _LSH))
++#define BITFEXT(var, bit) ((var & BITFMASK(bit)) >> (bit ## _LSH))
++
++/*
++ * Shift and width values for each register bitfield
++ */
++/* TMST_VALUE */
++#define TMST_VALUE_LSH  0
++#define TMST_VALUE_WID  8
++/* ENABLE */
++#define ACTIVE_LSH      7
++#define ACTIVE_WID      1
++#define STANDBY_LSH     6
++#define STANDBY_WID     1
++#define V3P3_SW_EN_LSH  5
++#define V3P3_SW_EN_WID  1
++#define VCOM_EN_LSH     4
++#define VCOM_EN_WID     1
++#define VDDH_EN_LSH     3
++#define VDDH_EN_WID     1
++#define VPOS_EN_LSH     2
++#define VPOS_EN_WID     1
++#define VEE_EN_LSH      1
++#define VEE_EN_WID      1
++#define VNEG_EN_LSH     0
++#define VNEG_EN_WID     1
++/* VCOM_ADJUST */
++#define VCOM_SET_LSH    0
++#define VCOM_SET_WID    8
++#define VCOM1_SET_LSH    0
++#define VCOM1_SET_WID    8
++#define VCOM2_SET_LSH    0
++#define VCOM2_SET_WID    1
++#define VCOM_ACQ_LSH	15
++#define VCOM_ACQ_WID	1
++#define VCOM_PROG_LSH	14
++#define VCOM_PEOG_WID	1
++#define VCOM_HiZ_LSH	13
++#define VCOM_HiZ_WID	1
++#define VCOM_AVG_LSH	11
++#define VCOM_AVG_WID	2
++/* INT_ENABLE1 */
++#define TSD_EN_LSH        6
++#define TSD_EN_WID        1
++#define HOT_EN_LSH        5
++#define HOT_EN_WID        1
++#define TMST_HOT_EN_LSH   4
++#define TMST_HOT_EN_WID   1
++#define TMST_COOL_EN_LSH  3
++#define TMST_COOL_EN_WID  1
++#define UVLO_EN_LSH       2
++#define UVLO_EN_WID       1
++/* INT_ENABLE2 */
++#define VB_UV_EN_LSH      7
++#define VB_UV_EN_WID      1
++#define VDDH_UV_EN_LSH    6
++#define VDDH_UV_EN_WID    1
++#define VN_UV_EN_LSH      5
++#define VN_UV_EN_WID      1
++#define VPOS_UV_EN_LSH    4
++#define VPOS_UV_EN_WID    1
++#define VEE_UV_EN_LSH     3
++#define VEE_UV_EN_WID     1
++#define VNEG_UV_EN_LSH    1
++#define VNEG_UV_EN_WID    1
++#define EOC_EN_LSH        0
++#define EOC_EN_WID        1
++/* INT_STATUS1 */
++#define TSDN_LSH        6
++#define TSDN_WID        1
++#define HOT_LSH         5
++#define HOT_WID         1
++#define TMST_HOT_LSH    4
++#define TMST_HOT_WID    1
++#define TMST_COOL_LSH   3
++#define TMST_COOL_WID   1
++#define UVLO_LSH        2
++#define UVLO_WID        1
++/* INT_STATUS2 */
++#define VB_UV_LSH       7
++#define VB_UV_WID       1
++#define VDDH_UV_LSH     6
++#define VDDH_UV_WID     1
++#define VN_UV_LSH       5
++#define VN_UV_WID       1
++#define VPOS_UV_LSH     4
++#define VPOS_UV_WID     1
++#define VEE_UV_LSH      3
++#define VEE_UV_WID      1
++#define VNEG_UV_LSH     1
++#define VNEG_UV_WID     1
++#define EOC_LSH         0
++#define EOC_WID         1
++/* PWR_SEQ0 */
++#define VDDH_SEQ_LSH    6
++#define VDDH_SEQ_WID    2
++#define VPOS_SEQ_LSH    4
++#define VPOS_SEQ_WID    2
++#define VEE_SEQ_LSH     2
++#define VEE_SEQ_WID     2
++#define VNEG_SEQ_LSH    0
++#define VNEG_SEQ_WID    2
++/* PWR_SEQ1 */
++#define DLY1_LSH    4
++#define DLY1_WID    4
++#define DLY0_LSH    0
++#define DLY0_WID    4
++/* PWR_SEQ2 */
++#define DLY3_LSH    4
++#define DLY3_WID    4
++#define DLY2_LSH    0
++#define DLY2_WID    4
++/* TMST_CONFIG */
++#define READ_THERM_LSH      7
++#define READ_THERM_WID      1
++#define CONV_END_LSH        5
++#define CONV_END_WID        1
++#define FAULT_QUE_LSH       3
++#define FAULT_QUE_WID       2
++#define FAULT_QUE_CLR_LSH   2
++#define FAULT_QUE_CLR_WID   1
++/* TMST_OS */
++#define TMST_HOT_SET_LSH    0
++#define TMST_HOT_SET_WID    8
++/* TMST_HYST */
++#define TMST_COOL_SET_LSH   0
++#define TMST_COOL_SET_WID   8
++/* PG_STATUS */
++#define VB_PG_LSH       7
++#define VB_PG_WID       1
++#define VDDH_PG_LSH     6
++#define VDDH_PG_WID     1
++#define VN_PG_LSH       5
++#define VN_PG_WID       1
++#define VPOS_PG_LSH     4
++#define VPOS_PG_WID     1
++#define VEE_PG_LSH      3
++#define VEE_PG_WID      1
++#define VNEG_PG_LSH     1
++#define VNEG_PG_WID     1
++/* REVID */
++#define MJREV_LSH       6
++#define MJREV_WID       2
++#define MNREV_LSH       4
++#define MNREV_WID       2
++#define VERSION_LSH     0
++#define VERSION_WID     4
++/* FIX_READ_POINTER */
++#define FIX_RD_PTR_LSH  0
++#define FIX_RD_PTR_WID  1
++
++/*
++ * VCOM Definitions
++ *
++ * The register fields accept voltages in the range 0V to -2.75V, but the
++ * VCOM parametric performance is only guaranteed from -0.3V to -2.5V.
++ */
++#define TPS65180_VCOM_MIN_uV   -2750000
++#define TPS65180_VCOM_MAX_uV          0
++#define TPS65180_VCOM_MIN_SET         0
++#define TPS65180_VCOM_MAX_SET       255
++#define TPS65180_VCOM_BASE_uV     10740
++#define TPS65180_VCOM_STEP_uV     10740
++#define TPS65185_VCOM_MIN_uV   -5110000
++#define TPS65185_VCOM_MAX_uV          0
++#define TPS65185_VCOM_MIN_SET         0
++#define TPS65185_VCOM_MAX_SET       511
++#define TPS65185_VCOM_BASE_uV     10000
++#define TPS65185_VCOM_STEP_uV     10000
++
++
++
++#define TPS6518x_VCOM_MIN_VAL         0
++#define TPS6518x_VCOM_MAX_VAL       255
++
++struct regulator_init_data;
++
++struct tps6518x {
++	/* chip revision */
++	int revID;
++
++	struct device *dev;
++	struct tps6518x_platform_data *pdata;
++
++	/* Platform connection */
++	struct i2c_client *i2c_client;
++
++	/* Timings */
++	unsigned int pwr_seq0;
++	unsigned int pwr_seq1;
++	unsigned int pwr_seq2;
++	unsigned int upseq0;
++	unsigned int upseq1;
++	unsigned int dwnseq0;
++	unsigned int dwnseq1;
++
++	/* GPIOs */
++	int gpio_pmic_pwrgood;
++	int gpio_pmic_vcom_ctrl;
++	int gpio_pmic_wakeup;
++	int gpio_pmic_intr;
++	int gpio_pmic_powerup;
++
++	/* TPS6518x part variables */
++	int pass_num;
++	int vcom_uV;
++
++	/* One-time VCOM setup marker */
++	bool vcom_setup;
++
++	/* powerup/powerdown wait time */
++	int max_wait;
++
++	/* Dynamically determined polarity for PWRGOOD */
++	int pwrgood_polarity;
++};
++
++enum {
++    /* In alphabetical order */
++    TPS6518x_DISPLAY, /* virtual master enable */
++    TPS6518x_VCOM,
++    TPS6518x_V3P3,
++    TPS6518x_NUM_REGULATORS,
++};
++
++/*
++ * Declarations
++ */
++struct regulator_init_data;
++struct tps6518x_regulator_data;
++
++struct tps6518x_platform_data {
++	unsigned int pwr_seq0;
++	unsigned int pwr_seq1;
++	unsigned int pwr_seq2;
++	unsigned int upseq0;
++	unsigned int upseq1;
++	unsigned int dwnseq0;
++	unsigned int dwnseq1;
++	int gpio_pmic_pwrgood;
++	int gpio_pmic_vcom_ctrl;
++	int gpio_pmic_wakeup;
++	int gpio_pmic_intr;
++	int gpio_pmic_powerup;
++	int pass_num;
++	int vcom_uV;
++
++	/* PMIC */
++	struct tps6518x_regulator_data *regulators;
++	int num_regulators;
++};
++
++struct tps6518x_regulator_data {
++	int id;
++	struct regulator_init_data *initdata;
++	struct device_node *reg_node;
++};
++
++int tps6518x_reg_read(int reg_num, unsigned int *reg_val);
++int tps6518x_reg_write(int reg_num, const unsigned int reg_val);
++
++#endif
+-- 
+2.5.1
+diff --git a/drivers/input/touchscreen/elan_ts.c b/drivers/input/touchscreen/elan_ts.c
+index 8590a94..6e7bc36 100644
+--- a/drivers/input/touchscreen/elan_ts.c
++++ b/drivers/input/touchscreen/elan_ts.c
+@@ -34,11 +34,12 @@
+ 
+ static const char ELAN_TS_NAME[] = "elan-touch";
+ 
+-#define ELAN_TS_X_MAX		1088
+-#define ELAN_TS_Y_MAX		768
+-#define ELAN_USER_X_MAX		800
+-#define ELAN_USER_Y_MAX		600
++#define ELAN_TS_X_MAX		1400
++#define ELAN_TS_Y_MAX		1900
++#define ELAN_USER_X_MAX		758
++#define ELAN_USER_Y_MAX		1024
+ #define IDX_PACKET_SIZE		8
++#define IOCTL_TOUCH_OFF _IO('k',2)
+ 
+ enum {
+ 	hello_packet = 0x55,
+@@ -104,7 +105,7 @@ static int __hello_packet_handler(struct i2c_client *client)
+ 		return rc;
+ 	} else {
+ 		int i;
+-		pr_info("hello packet: [0x%02x 0x%02x 0x%02x 0x%02x]\n",
++		pr_info("elan: hello packet v2: [0x%02x 0x%02x 0x%02x 0x%02x]\n",
+ 		       buf_recv[0], buf_recv[1], buf_recv[2], buf_recv[3]);
+ 
+ 		for (i = 0; i < 4; i++)
+@@ -118,6 +119,7 @@ static int __hello_packet_handler(struct i2c_client *client)
+ static inline int elan_touch_parse_xy(uint8_t *data, uint16_t *x,
+ 				      uint16_t *y)
+ {
++	//printk("parse init");
+ 	*x = (data[0] & 0xf0);
+ 	*x <<= 4;
+ 	*x |= data[1];
+@@ -133,7 +135,7 @@ static inline int elan_touch_parse_xy(uint8_t *data, uint16_t *x,
+ 		*y = ELAN_TS_Y_MAX;
+ 	*y = ((((ELAN_TS_Y_MAX -
+ 		 *y) * 1000) / ELAN_TS_Y_MAX) * ELAN_USER_Y_MAX) / 1000;
+-
++	//printk("parse end");
+ 	return 0;
+ }
+ 
+@@ -174,27 +176,51 @@ static void elan_touch_report_data(struct i2c_client *client, uint8_t *buf)
+ 	{
+ 		uint16_t x1, x2, y1, y2;
+ 		uint8_t finger_stat;
+-
+-		finger_stat = (buf[idx_finger_state] & 0x06) >> 1;
++		//finger_stat = (buf[idx_finger_state] & 0x06) >> 1;
++		finger_stat = buf[idx_finger_state];
++		//printk("buf[idx_finger_state]=%i > finger_stat=%i",buf[idx_finger_state] & 0x06,finger_stat);
++		//finger_stat = buf[idx_finger_state];
++		//if(buf[idx_finger_state]==0){
++		//	input_report_key(elan_touch_data.input, BTN_TOUCH, 0);
++			//
++		//}else if(buf[idx_finger_state]==1){
++		//	input_report_key(elan_touch_data.input, BTN_TOUCH, 1);
++		//	elan_touch_parse_xy(&buf[1], &x1, &y1);
++		//	input_report_abs(elan_touch_data.input, ABS_X, x1);
++		//	input_report_abs(elan_touch_data.input, ABS_Y, y1);
++		//}
+ 
+ 		if (finger_stat == 0) {
+ 			input_report_key(elan_touch_data.input, BTN_TOUCH, 0);
+-			input_report_key(elan_touch_data.input, BTN_2, 0);
++			//printk("x1/y1?? fingerstat=%i",finger_stat);
++			//input_report_key(elan_touch_data.input, BTN_2, 0);
++			
+ 		} else if (finger_stat == 1) {
+ 			elan_touch_parse_xy(&buf[1], &x1, &y1);
+ 			input_report_abs(elan_touch_data.input, ABS_X, x1);
+ 			input_report_abs(elan_touch_data.input, ABS_Y, y1);
+ 			input_report_key(elan_touch_data.input, BTN_TOUCH, 1);
+-			input_report_key(elan_touch_data.input, BTN_2, 0);
++			//printk("fing=%i x1/y1 %i/%i",finger_stat,x1,y1);
+ 		} else if (finger_stat == 2) {
++			elan_touch_parse_xy(&buf[4], &x2, &y2);
++			input_report_abs(elan_touch_data.input, ABS_HAT0X, x2);
++			input_report_abs(elan_touch_data.input, ABS_HAT0Y, y2);
++			input_report_key(elan_touch_data.input, BTN_2, 0);
++			//printk("fing=%i x1/y1 %i/%i",finger_stat,x1,y1);
++		} else if (finger_stat == 3) {
+ 			elan_touch_parse_xy(&buf[1], &x1, &y1);
++			//printk("fing=%i x1/y1 %i/%i",finger_stat,x1,y1);
+ 			input_report_abs(elan_touch_data.input, ABS_X, x1);
+ 			input_report_abs(elan_touch_data.input, ABS_Y, y1);
+ 			input_report_key(elan_touch_data.input, BTN_TOUCH, 1);
+ 			elan_touch_parse_xy(&buf[4], &x2, &y2);
++			//printk("fing=%i x2/y2 %i/%i",finger_stat,x2,y2);
+ 			input_report_abs(elan_touch_data.input, ABS_HAT0X, x2);
+ 			input_report_abs(elan_touch_data.input, ABS_HAT0Y, y2);
+ 			input_report_key(elan_touch_data.input, BTN_2, 1);
++			
++		}else{
++			printk("else fingerstat=%i",finger_stat);
+ 		}
+ 		input_sync(elan_touch_data.input);
+ 		break;
+@@ -415,6 +441,7 @@ MODULE_DEVICE_TABLE(of, elan_dt_ids);
+ 
+ static int elan_suspend(struct device *dev)
+ {
++	printk("-----SUSPEND-----");
+ 	return 0;
+ }
+ 
+diff --git a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c b/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
+index e0b99d4b042f..a0359e1ef33f 100644
+--- a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
++++ b/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
+@@ -297,6 +297,57 @@ static struct fb_videomode ed060xh2c1mode = {
+ 	.flag = 0,
+ };
+ 
++static struct fb_videomode ed060xh7u6_r411mode = {
++	.name = "E60U6_R411",
++	.refresh = 85,
++	.xres = 1024,
++	.yres = 758,
++	.pixclock = 40000000,
++	.left_margin = 12,
++	.right_margin = 76,
++	.upper_margin = 4,
++	.lower_margin = 5,
++	.hsync_len = 12,
++	.vsync_len = 2,
++	.sync = 0,
++	.vmode = FB_VMODE_NONINTERLACED,
++	.flag = 0,
++};
++
++static struct fb_videomode ed060xh7u6_r415mode = {
++	.name = "E60U6_R415",
++	.refresh = 85,
++	.xres = 1024,
++	.yres = 758,
++	.pixclock = 40000000,
++	.left_margin = 12,
++	.right_margin = 76,
++	.upper_margin = 4,
++	.lower_margin = 5,
++	.hsync_len = 12,
++	.vsync_len = 2,
++	.sync = 0,
++	.vmode = FB_VMODE_NONINTERLACED,
++	.flag = 0,
++};
++
++static struct fb_videomode ed060xh7u4_r307mode = {
++	.name = "E60U4_R307",
++	.refresh = 85,
++	.xres = 1024,
++	.yres = 758,
++	.pixclock = 40000000,
++	.left_margin = 12,
++	.right_margin = 76,
++	.upper_margin = 4,
++	.lower_margin = 5,
++	.hsync_len = 12,
++	.vsync_len = 2,
++	.sync = 0,
++	.vmode = FB_VMODE_NONINTERLACED,
++	.flag = 0,
++};
++
+ static struct fb_videomode e60_v110_mode = {
+ 	.name = "E60_V110",
+ 	.refresh = 50,
+@@ -379,6 +430,45 @@ static struct imx_epdc_fb_mode panel_modes[] = {
+ 		19, 	/* gdclk_offs */
+ 		1, 	/* num_ce */
+ 	},
++	{
++		&ed060xh7u6_r411mode,	/* struct fb_videomode *mode */
++		4, 	/* vscan_holdoff */
++		10, 	/* sdoed_width */
++		20, 	/* sdoed_delay */
++		10, 	/* sdoez_width */
++		20, 	/* sdoez_delay */
++		524, 	/* GDCLK_HP */
++		327, 	/* GDSP_OFF */
++		0, 	/* GDOE_OFF */
++		19, 	/* gdclk_offs */
++		1, 	/* num_ce */
++	},
++	{
++		&ed060xh7u6_r415mode,	/* struct fb_videomode *mode */
++		4, 	/* vscan_holdoff */
++		10, 	/* sdoed_width */
++		20, 	/* sdoed_delay */
++		10, 	/* sdoez_width */
++		20, 	/* sdoez_delay */
++		524, 	/* GDCLK_HP */
++		327, 	/* GDSP_OFF */
++		0, 	/* GDOE_OFF */
++		19, 	/* gdclk_offs */
++		1, 	/* num_ce */
++	},
++	{
++		&ed060xh7u4_r307mode,	/* struct fb_videomode *mode */
++		4, 	/* vscan_holdoff */
++		10, 	/* sdoed_width */
++		20, 	/* sdoed_delay */
++		10, 	/* sdoez_width */
++		20, 	/* sdoez_delay */
++		524, 	/* GDCLK_HP */
++		327, 	/* GDSP_OFF */
++		0, 	/* GDOE_OFF */
++		19, 	/* gdclk_offs */
++		1, 	/* num_ce */
++	},
+ 	{
+ 		&e60_v110_mode,
+ 		4,      /* vscan_holdoff */
+@@ -4934,6 +5024,7 @@ static int mxc_epdc_fb_init_hw(struct fb_info *info)
+ 		strcpy(fb_data->fw_str, "imx/epdc/epdc_");
+ 		strcat(fb_data->fw_str, fb_data->cur_mode->vmode->name);
+ 		strcat(fb_data->fw_str, ".fw");
++		printk("Current fw: %s\n", fb_data->fw_str);
+ 	}
+ 
+ 	fb_data->fw_default_load = false;
+diff --git a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c b/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
+index 0deadf487cbd..86dc56612b77 100644
+--- a/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
++++ b/drivers/video/fbdev/mxc/mxc_epdc_v2_fb.c
+@@ -2738,12 +2738,12 @@ static int epdc_process_update(struct update_data_list *upd_data_list,
+ 	}
+ 
+ 	/* This is a blocking call, so upon return PxP tx should be done */
+-	ret = pxp_complete_update(fb_data, &hist_stat);
+-	if (ret) {
+-		dev_err(fb_data->dev, "Unable to complete PxP update task: pre_prcoess.\n");
+-		mutex_unlock(&fb_data->pxp_mutex);
+-		return ret;
+-	}
++	//ret = pxp_complete_update(fb_data, &hist_stat);
++	//if (ret) {
++	//	dev_err(fb_data->dev, "Unable to complete PxP update task: pre_prcoess.\n");
++	//	mutex_unlock(&fb_data->pxp_mutex);
++	//	return ret;
++	//}
+ #endif
+ 	pr_debug(" upd_data.dither_mode %d  \n", upd_desc_list->upd_data.dither_mode);
+ 	fb_data->pxp_conf.proc_data.dither_mode = 0;
